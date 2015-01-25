@@ -18,19 +18,16 @@ class Ant(WorldObject):
         self.direction = norm_vector(np.array(direction))
         self.type = "ant"
         self.speed = 100
-        self.max_speed = 200
+        self.max_speed = 100
         self.min_speed = 5
         self.length = 10
-        self.center_radius = 5 * 15
+        self.center_radius = 5 * 5
         self.head_radius = 4
         self.head_angle = 100
 
-        self.max_turn_angle = 20
+        self.max_turn_angle = 45
 
     def get_weighted_collision_vector(self, object_list):
-        if len(object_list) == 0:
-            return np.array([0,0], dtype=np.float64)
-
         v_sum = np.array([0,0], dtype=np.float)
         for o in object_list:
             v = ((self.position - o.position) / np.linalg.norm(self.position - o.position))
@@ -66,13 +63,10 @@ class Ant(WorldObject):
             if o == self:
                 o_in_range.remove(o)
 
-        collision_vector = self.get_weighted_collision_vector(o_in_range)
-
-        avoiding_vector = self.get_avoiding_vector(collision_vector, delta)
-
-        #print "avoiding" , avoiding_vector
-
-        self.direction = avoiding_vector
+        if len(o_in_range) > 0:  
+            collision_vector = self.get_weighted_collision_vector(o_in_range)
+            avoiding_vector = self.get_avoiding_vector(collision_vector, delta)
+            self.direction = avoiding_vector
 
     def tick(self, delta):
         '''

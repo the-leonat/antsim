@@ -13,7 +13,8 @@ def norm_vector(v1):
     return v1 / np.linalg.norm(v1)
 
 def get_angle(v1, v2):
-    return np.degrees( np.arccos( np.dot(v1,v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)) ) )
+    angle = np.degrees( np.arccos( np.dot(v1,v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)) ) )
+    return angle
 
 def get_oriented_angle(v1, v2):
     angle = get_angle(v1,v2)
@@ -74,7 +75,7 @@ class World():
         in_range = []
 
         for o in self.world_objects:
-            if get_distance(o.position, pos) <= radius:
+            if get_distance(o.position, pos) <= radius * 2:
                 in_range.append(o)
 
         return in_range

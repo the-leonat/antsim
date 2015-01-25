@@ -108,7 +108,7 @@ class Simulator():
         transform_v = np.array([screen_x / 2, screen_y / 2])
 
         #convert to integer array
-        position_int = np.array(np.rint(position_vector + transform_v), dtype=np.uint32)
+        position_int = np.array(np.rint(position_vector + transform_v), dtype=int)
 
         return position_int
 
@@ -222,9 +222,12 @@ def setup(n = 100, p = 50):
     #add pheromones
     #s.world.phero_map = create_random_pheromones(100, s.world.phero_map)
 
-
-
     return s
+
+def pp(s):
+    for o in s.world.get_objects():
+        print o.position
+
 
 if __name__ == "__main__":
     #startup()
