@@ -73,23 +73,29 @@ class Ant(WorldObject):
         return False
 
     def trail_pheromone(self):
+        # turns the ant to the side with higher pheromone concentration
 
         pos_head = self.position + self.direction * (self.length / 2)
         pos_left = pos_head + rotate_vector(np.array([self.head_radius, 0]), self.head_angle / 2)
         pos_right = pos_head + rotate_vector(np.array([self.head_radius, 0]) * -1, self.head_angle / 2)
 
-        #concentrations
+        # concentrations
         c_left = self.world.phero_map.get_pheromone_concentration(pos_left, self.head_radius)
         c_right = self.world.phero_map.get_pheromone_concentration(pos_right, self.head_radius)
 
-        #angle
+        # angle
+        # maybe divide by max pheromone concentration
         a = c_left - c_right
-        #a /= np.maximum(c_left, c_right)
-        a = self.max_turn_angle if a > self.max_turn_angle else a
-        a = -1 * self.max_turn_angle if a < self.max_turn_angle else a
 
-        if np.allclose(a, 0.0, 1e-2):
+        if np.allclose(a, 0, 1e-4):
             return False
+
+        # cap at max_angle
+        if a > self.max_turn_angle:
+            a = self.max_turn_angle
+        else:
+            if a < -1 * self.max_turn_angle:
+                a = -1 * self.max_turn_angle
 
         self.direction = rotate_vector(self.direction, a)
         return True
@@ -104,8 +110,7 @@ class Ant(WorldObject):
 
         evaded = self.evade_objects(delta)
         if not evaded:
-            pass
-            #trailed = self.trail_pheromone()
+            trailed = self.trail_pheromone()
 
         speed = self.max_speed if not evaded else self.min_speed
         self.position = self.position + ( self.direction * speed * delta)

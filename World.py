@@ -61,7 +61,7 @@ class World():
         #first we use a list to hold objects
         self.world_objects = []
 
-        self.phero_map = PheromoneMap([100, 100], 1)
+        self.phero_map = PheromoneMap([1000, 1000], 1)
 
         #time which passes between two ticks
         self.delta_time = 1 / 40

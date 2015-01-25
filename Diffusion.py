@@ -37,7 +37,8 @@ class PheromoneMap():
         #disortion of mask
         # -
 
-        return np.average(self.phero_map[mask])
+        #return np.average(self.phero_map[mask])
+        return 0
 
     def set_random_values(self):
         pass
