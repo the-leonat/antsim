@@ -32,7 +32,7 @@ class Ant(WorldObject):
         for o in object_list:
             v = ((self.position - o.position) / np.linalg.norm(self.position - o.position))
             v_sum = v_sum + v
-   
+
         average = v_sum / len(object_list)
 
         return average
@@ -49,7 +49,7 @@ class Ant(WorldObject):
 
         return norm_vector(new_direction)
 
-    def evade(self, delta):
+    def evade_objects(self, delta):
         #this is the main collision method
 
         o_in_center_range = self.world.get_objects_in_range(self.position, self.center_radius)
@@ -63,15 +63,50 @@ class Ant(WorldObject):
             if o == self:
                 o_in_range.remove(o)
 
-        if len(o_in_range) > 0:  
+        if len(o_in_range) > 0:
             collision_vector = self.get_weighted_collision_vector(o_in_range)
             avoiding_vector = self.get_avoiding_vector(collision_vector, delta)
             self.direction = avoiding_vector
+
+            return True
+
+        return False
+
+    def trail_pheromone(self):
+
+        pos_head = self.position + self.direction * (self.length / 2)
+        pos_left = pos_head + rotate_vector(np.array([self.head_radius, 0]), self.head_angle / 2)
+        pos_right = pos_head + rotate_vector(np.array([self.head_radius, 0]) * -1, self.head_angle / 2)
+
+        #concentrations
+        c_left = self.world.phero_map.get_pheromone_concentration(pos_left, self.head_radius)
+        c_right = self.world.phero_map.get_pheromone_concentration(pos_right, self.head_radius)
+
+        #angle
+        a = c_left - c_right
+        #a /= np.maximum(c_left, c_right)
+        a = self.max_turn_angle if a > self.max_turn_angle else a
+        a = -1 * self.max_turn_angle if a < self.max_turn_angle else a
+
+        if np.allclose(a, 0.0, 1e-2):
+            return False
+
+        self.direction = rotate_vector(self.direction, a)
+        return True
 
     def tick(self, delta):
         '''
         put here all the movement logic
         '''
-        self.evade(delta)
-        self.position = self.position + ( self.direction * self.min_speed * delta)
+
+        evaded = False
+        trailed = False
+
+        evaded = self.evade_objects(delta)
+        if not evaded:
+            pass
+            #trailed = self.trail_pheromone()
+
+        speed = self.max_speed if not evaded else self.min_speed
+        self.position = self.position + ( self.direction * speed * delta)
 
