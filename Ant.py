@@ -1,3 +1,4 @@
+from __future__ import division
 from World import *
 
 import numpy as np
@@ -13,6 +14,7 @@ class Ant(WorldObject):
         #NOTE: All elements are relative to one second!
 
         #norm the direction to 1
+
         self.direction = norm_vector(np.array(direction))
         self.type = "ant"
         self.speed = 100
@@ -26,29 +28,23 @@ class Ant(WorldObject):
         self.max_turn_angle = 20
 
     def get_weighted_collision_vector(self, object_list):
+        if len(object_list) == 0:
+            return np.array([0,0], dtype=np.float64)
 
-        v_sum = np.array([0,0], dtype=float)
+        v_sum = np.array([0,0], dtype=np.float)
         for o in object_list:
-            try:
-                #if the position is the same:
-                if np.array_equal(self.position, o.position):
-                    v = np.array([0,0])
-                else:
-                    v = ((self.position - o.position) / np.linalg.norm(self.position - o.position))
-            except Exception, e:
-                print e
-                v = np.array([0,0])
-            finally:
-                v_sum = v_sum + v
+            v = ((self.position - o.position) / np.linalg.norm(self.position - o.position))
+            v_sum = v_sum + v
+   
+        average = v_sum / len(object_list)
 
-        return v_sum / len(object_list)
+        return average
 
     def get_avoiding_vector(self, collision_vector, delta):
         o_turn_angle, turn_angle, orientation = get_oriented_angle(self.direction, self.direction + collision_vector)
 
         #check if angle exceeds max angle
         if turn_angle > self.max_turn_angle * delta:
-            print "angle is more than max!!"
             o_turn_angle = self.max_turn_angle * orientation * delta
 
         #rotate the vector
@@ -66,6 +62,7 @@ class Ant(WorldObject):
 
         # remove ourself from o_in_range
         for o in o_in_range:
+            o.position
             if o == self:
                 o_in_range.remove(o)
 

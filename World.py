@@ -174,28 +174,3 @@ class WorldObject():
 
         '''
         pass
-
-
-
-
-
-
-
-class Pheromone(WorldObject):
-    '''
-    class Pheromone inherits from WorldObject and has strength and decay
-    '''
-
-    def __init__(self, position):
-        WorldObject.__init__(self, position, world_instance = None)
-        self.strength = 1
-        self.decay = 0.01
-        self.type = "phero"
-
-    def tick(self, delta):
-                print "strength", self.strength
-                if self.strength - self.decay > 0:
-                        self.strength = self.strength - self.decay
-                else:
-                        self.strength = 0
-

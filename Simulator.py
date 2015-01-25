@@ -1,3 +1,4 @@
+from __future__ import division
 import Settings as settings
 from World import *
 from Viewer import *
@@ -84,12 +85,12 @@ class Simulator():
             self.world.update()
 
             if self.is_mode("live") and redraw:
-                #self.draw_data()
-                self.draw_position_over_time()
+                self.draw_data()
+                #self.draw_position_over_time()
 
         if self.is_mode("live"):
-            #self.draw_data()
-            self.draw_position_over_time()
+            self.draw_data()
+            #self.draw_position_over_time()
 
     def s(self, n = 1, redraw=True):
         self.simulate_steps(n, redraw)
@@ -107,7 +108,7 @@ class Simulator():
         transform_v = np.array([screen_x / 2, screen_y / 2])
 
         #convert to integer array
-        position_int = np.array(np.rint(position_vector + transform_v), dtype=np.int)
+        position_int = np.array(np.rint(position_vector + transform_v), dtype=np.uint32)
 
         return position_int
 
@@ -160,7 +161,7 @@ class Simulator():
                 position_int = self.convert_coordinates(o.position)
 
                 #convert to int
-                direction_int = np.array(np.rint( o.direction * o.speed), dtype=int)
+                direction_int = np.array(np.rint( o.direction * o.speed), dtype=np.uint32)
 
                 #print "position int: ", position_int
 
@@ -187,7 +188,7 @@ def create_random_objects(n):
 
 
     #returns n objects with position between (10,10) and (390,390)
-    return [Ant([np.random.randint(-200,200), np.random.randint(-200,200)], [np.random.uniform(-1,1), np.random.uniform(-1,1)]) for a in range(0,n)]
+    return [Ant( np.random.uniform(-1,1, (2)) * 200, np.random.uniform(-1,1, (2)) ) for a in range(0,n)]
 
 def create_random_pheromones(p, mapp):
     mx, my = mapp.shape
@@ -219,7 +220,7 @@ def setup(n = 100, p = 50):
     s.world.add_objects( create_random_objects(n) )
 
     #add pheromones
-    s.world.phero_map = create_random_pheromones(100, s.world.phero_map)
+    #s.world.phero_map = create_random_pheromones(100, s.world.phero_map)
 
 
 

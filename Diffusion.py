@@ -1,3 +1,4 @@
+from __future__ import division
 import scipy.signal
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +10,7 @@ def diffuse(mapp):
 	return scipy.signal.convolve(mapp, rate)
 
 
-class PheromoneMap(Object):
+class PheromoneMap():
 	def __init__(self, dimension, resolution = 1):
 		#elements 
 		self.resolution = resolution
@@ -37,3 +38,5 @@ class PheromoneMap(Object):
 
 		return np.average(self.phero_map[mask])
 
+	def set_random_values(self):
+		pass
