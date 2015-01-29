@@ -76,8 +76,8 @@ class Ant(WorldObject):
         # turns the ant to the side with higher pheromone concentration
 
         pos_head = self.position + self.direction * (self.length / 2)
-        pos_left = pos_head + rotate_vector(np.array([self.head_radius, 0]), self.head_angle / 2)
-        pos_right = pos_head + rotate_vector(np.array([self.head_radius, 0]) * -1, self.head_angle / 2)
+        pos_left = pos_head + rotate_vector(np.array([self.direction * self.head_radius, 0]), self.head_angle / 2)
+        pos_right = pos_head + rotate_vector(np.array([self.direction * self.head_radius, 0]), 360 - self.head_angle / 2)
 
         # concentrations
         c_left = self.world.phero_map.get_pheromone_concentration(pos_left, self.head_radius)
