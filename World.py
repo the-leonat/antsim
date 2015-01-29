@@ -18,6 +18,11 @@ def get_angle(v1, v2):
 
 def get_oriented_angle(v1, v2):
     angle = get_angle(v1,v2)
+
+    #haaaardcode XXX
+    if np.isnan(angle):
+        return 180., 180., 0
+
     oriented_angle = angle
     orientation = 0
 

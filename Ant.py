@@ -49,6 +49,7 @@ class Ant(WorldObject):
         return average
 
     def get_avoiding_vector(self, collision_vector, delta):
+
         o_turn_angle, turn_angle, orientation = get_oriented_angle(self.direction, self.direction + collision_vector)
 
         #check if angle exceeds max angle
