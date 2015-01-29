@@ -27,6 +27,17 @@ class Ant(WorldObject):
 
         self.max_turn_angle = 45
 
+    def get_left_antenna_position(self):
+        pos_head = self.get_head_position()
+        return pos_head + rotate_vector(self.direction * self.head_radius, self.head_angle / 2)
+
+    def get_right_antenna_position(self):
+        pos_head = self.get_head_position()
+        return pos_head + rotate_vector(self.direction * self.head_radius, 360 - self.head_angle / 2)
+
+    def get_head_position(self):
+        return self.position + self.direction * (self.length / 2)
+
     def get_weighted_collision_vector(self, object_list):
         v_sum = np.array([0,0], dtype=np.float)
         for o in object_list:
@@ -75,9 +86,8 @@ class Ant(WorldObject):
     def trail_pheromone(self):
         # turns the ant to the side with higher pheromone concentration
 
-        pos_head = self.position + self.direction * (self.length / 2)
-        pos_left = pos_head + rotate_vector(np.array([self.direction * self.head_radius, 0]), self.head_angle / 2)
-        pos_right = pos_head + rotate_vector(np.array([self.direction * self.head_radius, 0]), 360 - self.head_angle / 2)
+        pos_left = self.get_left_antenna_position()
+        pos_right = self.get_right_antenna_position()
 
         # concentrations
         c_left = self.world.phero_map.get_pheromone_concentration(pos_left, self.head_radius)
