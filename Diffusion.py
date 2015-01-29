@@ -1,11 +1,9 @@
 from __future__ import division
 import scipy.signal
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 
 def diffuse(mapp):
-    rate = np.array([[0.0625,0.0625,0.0625],[0.0625,0.5,0.0625],[0.0625,0.0625,0.0625]])
+    rate = np.array([[0.0625,0.0625,0.0625],[0.0625,0.4,0.0625],[0.0625,0.0625,0.0625]])
     #rate = np.array([[0.2,0.2,0.2],[0.2,0.5,0.2],[0.2,0.2,0.2]])
     return scipy.signal.convolve(mapp, rate)
 
@@ -18,7 +16,9 @@ class PheromoneMap():
         #self.phero_map = np.zeros(tuple(dimension * resolution), dtype=np.float)
         self.phero_map = np.random.uniform(0.0, 100.0, tuple(dimension * resolution))
 
-        self.diffusion_matrix = np.array([[0.0,0.2,0.0],[0.2,0.0,0.2],[0.0,0.2,0.0]])
+        #self.diffusion_matrix = np.array([[0.0,0.2,0.0],[0.2,0.0,0.2],[0.0,0.2,0.0]])
+        #self.diffusion_matrix = np.array([[0.0625,0.0625,0.0625],[0.0625,0.5,0.0625],[0.0625,0.0625,0.0625]])
+        self.diffusion_matrix = np.array([[.5, 0.01],[0.01, 0.01]])
 
     def tick(self, delta):
         self.phero_map = scipy.signal.convolve(self.phero_map, self.diffusion_matrix * delta)

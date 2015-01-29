@@ -142,6 +142,7 @@ class World():
 
         #update pheromap
         #self.phero_map = df.diffuse(self.phero_map)
+        #self.phero_map.tick(1)
 
     def update_objects(self):
         '''

@@ -21,7 +21,7 @@ class Ant(WorldObject):
         self.max_speed = 100
         self.min_speed = 5
         self.length = 10
-        self.center_radius = 5 * 5
+        self.center_radius = 5
         self.head_radius = 4
         self.head_angle = 100
 
@@ -39,14 +39,13 @@ class Ant(WorldObject):
         return self.position + self.direction * (self.length / 2)
 
     def get_weighted_collision_vector(self, object_list):
-        v_sum = np.array([0,0], dtype=np.float)
-        for o in object_list:
+        matrix = np.empty((2, len(object_list)), dtype=np.float)
+
+        for i,o in enumerate(object_list):
             v = ((self.position - o.position) / np.linalg.norm(self.position - o.position))
-            v_sum = v_sum + v
+            matrix[:,i] = v
 
-        average = v_sum / len(object_list)
-
-        return average
+        return np.average(matrix, axis=1)
 
     def get_avoiding_vector(self, collision_vector, delta):
 

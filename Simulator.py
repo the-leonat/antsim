@@ -4,10 +4,10 @@ from World import *
 from Viewer import *
 from Ant import *
 import time
-import matplotlib.pyplot as plt
 import pygame
 import pygame.gfxdraw
 import numpy as np
+import View as view
 
 class Simulator():
     '''
@@ -86,10 +86,14 @@ class Simulator():
 
             if self.is_mode("live") and redraw:
                 self.draw_data()
+                #view.set_phero_map(self.world.phero_map.phero_map)
+                #view.tick()
                 #self.draw_position_over_time()
 
-        if self.is_mode("live"):
+        if self.is_mode("live") and not redraw:
             self.draw_data()
+            #view.set_phero_map(self.world.phero_map.phero_map)
+            #view.tick()
             #self.draw_position_over_time()
 
     def s(self, n = 1, redraw=True):
