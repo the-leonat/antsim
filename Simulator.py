@@ -170,7 +170,7 @@ class Simulator():
                 position_int = self.convert_coordinates(o.position)
 
                 #convert to int
-                direction_int = np.array(np.rint( o.direction * o.speed), dtype=np.uint32)
+                direction_int = np.array(np.rint( o.direction * 10), dtype=np.uint32)
 
                 #print "position int: ", position_int
 

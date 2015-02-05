@@ -3,7 +3,7 @@ import scipy.signal
 import numpy as np
 
 def diffuse(mapp):
-    rate = np.array([[0.0625,0.0625,0.0625],[0.0625,0.4,0.0625],[0.0625,0.0625,0.0625]])
+    rate = np.array([[0.0625,0.0625,0.0625],[0.0625,0.5,0.0625],[0.0625,0.0625,0.0625]])
     #rate = np.array([[0.2,0.2,0.2],[0.2,0.5,0.2],[0.2,0.2,0.2]])
     return scipy.signal.convolve(mapp, rate)
 
@@ -27,6 +27,7 @@ class PheromoneMap():
         return np.array(position * self.resolution, dtype=np.int)
 
     def get_pheromone_concentration(self, position, radius):
+        print position
         r = int(radius * self.resolution)
 
         a, b = self.convert_coordinates(position)

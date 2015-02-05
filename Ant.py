@@ -18,8 +18,8 @@ class Ant(WorldObject):
         self.direction = norm_vector(np.array(direction))
         self.type = "ant"
         self.speed = 100
-        self.max_speed = 100
-        self.min_speed = 5
+        self.max_speed = 150
+        self.min_speed = 40
         self.length = 10
         self.center_radius = 5
         self.head_radius = 4
@@ -38,14 +38,17 @@ class Ant(WorldObject):
     def get_head_position(self):
         return self.position + self.direction * (self.length / 2)
 
-    def get_weighted_collision_vector(self, object_list):
-        matrix = np.empty((2, len(object_list)), dtype=np.float)
+    def get_weighted_collision_vector(self, position_list):
+        matrix = np.empty((2, len(position_list)), dtype=np.float)
 
-        for i,o in enumerate(object_list):
-            v = ((self.position - o.position) / np.linalg.norm(self.position - o.position))
+        for i,pos in enumerate(position_list):
+            v = ((self.position - pos) / np.linalg.norm(self.position - pos))
             matrix[:,i] = v
 
-        return np.average(matrix, axis=1)
+
+        av = np.average(matrix, axis=1)
+
+        return av
 
     def get_avoiding_vector(self, collision_vector, delta):
 
@@ -63,19 +66,20 @@ class Ant(WorldObject):
     def evade_objects(self, delta):
         #this is the main collision method
 
-        o_in_center_range = self.world.get_objects_in_range(self.position, self.center_radius)
-        o_in_top_range = self.world.get_objects_in_range_and_radius(self.position, self.direction, self.head_radius, self.head_angle)
+        pos_in_center_range = self.world.get_positions_in_range_kd(self.position, self.center_radius)
+        pos_in_top_range = self.world.get_positions_in_range_and_radius_kd(self.position, self.direction, self.head_radius, self.head_angle)
 
-        o_in_range = o_in_center_range + o_in_top_range
+        if pos_in_center_range.size == 0 and pos_in_top_range.size == 0:
+            return 
+        elif pos_in_center_range.size > 0 and pos_in_top_range.size == 0:
+            pos_in_range = pos_in_center_range
+        elif pos_in_center_range.size == 0 and pos_in_top_range.size > 0:
+            pos_in_range = pos_in_top_range
+        else:
+            pos_in_range = np.concatenate((pos_in_center_range, pos_in_top_range), axis=0)
 
-        # remove ourself from o_in_range
-        for o in o_in_range:
-            o.position
-            if o == self:
-                o_in_range.remove(o)
-
-        if len(o_in_range) > 0:
-            collision_vector = self.get_weighted_collision_vector(o_in_range)
+        if len(pos_in_range) > 0:
+            collision_vector = self.get_weighted_collision_vector(pos_in_range)
             avoiding_vector = self.get_avoiding_vector(collision_vector, delta)
             self.direction = avoiding_vector
 
@@ -108,6 +112,7 @@ class Ant(WorldObject):
                 a = -1 * self.max_turn_angle
 
         self.direction = rotate_vector(self.direction, a)
+
         return True
 
     def tick(self, delta):

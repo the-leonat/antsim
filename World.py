@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
 from Diffusion import *
+from scipy.spatial import cKDTree
 ### helper functions ###
 
 def get_distance(v1, v2):
@@ -66,11 +67,23 @@ class World():
         #first we use a list to hold objects
         self.world_objects = []
 
+        #kd tree for faster search
+        self.kdtree = None
+
+
         self.phero_map = PheromoneMap([1000, 1000], 1)
 
         #time which passes between two ticks
         self.delta_time = 1 / 40
 
+    def update_kdtree(self): 
+        #construct kdtree
+        matrix = np.empty((2, len(self.world_objects)), dtype=np.float)
+ 
+        for i,o in enumerate(self.world_objects):
+            matrix[:,i] = o.position
+
+        self.kdtree = cKDTree(matrix.T, 50)
 
     def get_objects_in_range(self, pos, radius):
         '''returns a list of objects in a given range
@@ -84,6 +97,18 @@ class World():
                 in_range.append(o)
 
         return in_range
+
+    def get_positions_in_range_kd(self, pos, radius):
+        indices = self.kdtree.query_ball_point(pos, radius)
+
+        new_indices = []
+
+        for i in indices:
+            if not np.array_equal(self.kdtree.data[i], pos):
+                new_indices.append(i)
+
+        return self.kdtree.data[new_indices]
+
 
     def get_objects_in_range_and_radius(self, pos, dir, radius, check_angle):
         '''returns a list of objects in a given range, direction and angle'''
@@ -100,15 +125,19 @@ class World():
 
         return in_angle
 
-    def any_objects_in_range(self, pos, radius):
-        for o in self.world_objects:
-            distance = get_distance(o.position, pos)
+    def get_positions_in_range_and_radius_kd(self, pos2, dir, radius, check_angle):
+        in_range = self.get_positions_in_range_kd(pos2, radius)
+        in_angle = [];
 
-            #if distance == 0, its the object itself!
-            if distance <= radius * 2 and distance != 0.:
-                return True
+        for pos1 in in_range:
+            o_direction = pos1 - pos2
+            angle = get_angle(dir, o_direction)
 
-        return False
+            if 0 <= angle <= (check_angle / 2):
+                in_angle.append(pos1)
+
+        return np.array(in_angle)
+
 
     def get_objects(self, type = "all"):
         '''returns all objects
@@ -148,6 +177,10 @@ class World():
         '''
         iterates through all objects and calls the tick-method
         '''
+        #update kdtree
+        self.update_kdtree()
+
+        #call the tick method
         for o in self.world_objects:
             o.tick(self.delta_time)
 
