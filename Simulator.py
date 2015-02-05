@@ -23,7 +23,7 @@ class Simulator():
         self.world = World()
 
         self.screen = None
-
+        
         if self.is_mode("live"):
             self.screen = self.init_screen(400,400)
             self.screen.fill((255,255,255))
@@ -80,6 +80,9 @@ class Simulator():
 
         self.process_pygame_events()
 
+        t_start = time.clock()
+
+
         for x in range(0,n):
             #update the world model
             self.world.update()
@@ -89,6 +92,8 @@ class Simulator():
                 #view.set_phero_map(self.world.phero_map.phero_map)
                 #view.tick()
                 #self.draw_position_over_time()
+
+        print "time per frame: ", (time.clock() - t_start) / n
 
         if self.is_mode("live") and not redraw:
             self.draw_data()
