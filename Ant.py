@@ -19,7 +19,7 @@ class Ant(WorldObject):
         self.type = "ant"
         self.speed = 100
         self.max_speed = 150
-        self.min_speed = 40
+        self.min_speed = 4
         self.length = 10
         self.center_radius = 5
         self.head_radius = 4
@@ -115,10 +115,23 @@ class Ant(WorldObject):
 
         return True
 
+    def check_border(self):
+        border = self.world.dimensions / 2.
+
+        new_pos = self.position + self.direction
+        print new_pos
+        if not(border[0] > new_pos[0] > -border[0] and border[1] > new_pos[1] > -border[1]):
+            self.direction = self.direction * -1
+            print "out of bounds"
+
+
+
     def tick(self, delta):
         '''
         put here all the movement logic
         '''
+
+        self.check_border()
 
         evaded = False
         trailed = False

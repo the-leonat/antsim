@@ -25,7 +25,7 @@ class Simulator():
         self.screen = None
         
         if self.is_mode("live"):
-            self.screen = self.init_screen(400,400)
+            self.screen = self.init_screen(800,600)
             self.screen.fill((255,255,255))
 
 
@@ -136,7 +136,7 @@ class Simulator():
 
 
     def draw_data(self):
-        '''
+        '''git 
         takes all gameobjects and renders them
         '''
         self.screen.fill((255,255,255,0))
@@ -145,7 +145,7 @@ class Simulator():
         # phero_surface.fill((50,50,255,0))
 
         # #render the phero map first then blit ants into it
-        # alpha_data = self.world.phero_map.copy()
+        # alpha_data = self.world.phero_map.phero_map.copy()
         # #convert to rgba alpha format, 0 - 255
         # alpha_data = alpha_data * 255
         # alpha_data = alpha_data.astype(dtype=np.uint8)
@@ -197,7 +197,7 @@ def create_random_objects(n):
 
 
     #returns n objects with position between (10,10) and (390,390)
-    return [Ant( np.random.uniform(-1,1, (2)) * 200, np.random.uniform(-1,1, (2)) ) for a in range(0,n)]
+    return [Ant( np.random.uniform(-1,1, (2)) * 100, np.random.uniform(-1,1, (2)) ) for a in range(0,n)]
 
 def create_random_pheromones(p, mapp):
     mx, my = mapp.shape

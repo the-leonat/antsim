@@ -62,7 +62,7 @@ class World():
         2d array - dimensions of the world
         '''
 
-        self.dimensions = dimensions
+        self.dimensions = np.array(dimensions)
 
         #first we use a list to hold objects
         self.world_objects = []
@@ -71,7 +71,7 @@ class World():
         self.kdtree = None
 
 
-        self.phero_map = PheromoneMap([1000, 1000], 1)
+        self.phero_map = PheromoneMap(dimensions, 1)
 
         #time which passes between two ticks
         self.delta_time = 1 / 40
@@ -99,7 +99,7 @@ class World():
         return in_range
 
     def get_positions_in_range_kd(self, pos, radius):
-        indices = self.kdtree.query_ball_point(pos, radius)
+        indices = self.kdtree.query_ball_point(pos, radius * 2)
 
         new_indices = []
 

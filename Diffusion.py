@@ -14,7 +14,10 @@ class PheromoneMap():
         self.resolution = resolution
 
         #self.phero_map = np.zeros(tuple(dimension * resolution), dtype=np.float)
-        self.phero_map = np.random.uniform(0.0, 100.0, tuple(dimension * resolution))
+        self.phero_map = np.random.uniform(0.0, 1.0, tuple(dimension * resolution))
+        #self.phero_map = np.zeros(tuple(dimension * resolution))
+
+        self.phero_map[100:200,:] = 1.0
 
         #self.diffusion_matrix = np.array([[0.0,0.2,0.0],[0.2,0.0,0.2],[0.0,0.2,0.0]])
         #self.diffusion_matrix = np.array([[0.0625,0.0625,0.0625],[0.0625,0.5,0.0625],[0.0625,0.0625,0.0625]])
@@ -24,17 +27,16 @@ class PheromoneMap():
         self.phero_map = scipy.signal.convolve(self.phero_map, self.diffusion_matrix * delta)
 
     def convert_coordinates(self, position):
-        return np.array(position * self.resolution, dtype=np.int)
+        shift = np.array(self.phero_map.shape) / 2.
+        return np.array((position * self.resolution) + shift, dtype=np.int)
 
     def get_pheromone_concentration(self, position, radius):
-        print position
-        r = int(radius * self.resolution)
+        x,y = self.convert_coordinates(position)
 
-        a, b = self.convert_coordinates(position)
-        #setting up circular mask
-        mask = np.ogrid[a-r:a+r+1, b-r:b+r+1]
+        print x,y
 
-        return np.average(self.phero_map[mask])
+        return self.phero_map[x,y]
+
 
     def set_random_values(self):
         pass
