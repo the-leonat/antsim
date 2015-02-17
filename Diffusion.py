@@ -33,8 +33,6 @@ class PheromoneMap():
     def get_pheromone_concentration(self, position, radius):
         x,y = self.convert_coordinates(position)
 
-        print x,y
-
         return self.phero_map[x,y]
 
 

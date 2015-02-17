@@ -16,7 +16,6 @@ class Ant(WorldObject):
         #norm the direction to 1
 
         self.direction = norm_vector(np.array(direction))
-        self.type = "ant"
         self.speed = 100
         self.max_speed = 150
         self.min_speed = 4
@@ -26,6 +25,12 @@ class Ant(WorldObject):
         self.head_angle = 100
 
         self.max_turn_angle = 45
+
+    def __getstate__(self):
+        return (self.position, self.direction, self.speed)
+
+    def __setstate__(self, state):
+        self.position, self.direction, self.speed = state
 
     def get_left_antenna_position(self):
         pos_head = self.get_head_position()
@@ -119,7 +124,6 @@ class Ant(WorldObject):
         border = self.world.dimensions / 2.
 
         new_pos = self.position + self.direction
-        print new_pos
         if not(border[0] > new_pos[0] > -border[0] and border[1] > new_pos[1] > -border[1]):
             self.direction = self.direction * -1
             print "out of bounds"

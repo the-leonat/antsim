@@ -57,7 +57,7 @@ class World():
     class World holds a set of objects which must have a positionvector [x,y]
     It can give back distances between objects or return a set of objects in a given range
     '''
-    def __init__(self, dimensions = [400,400]):
+    def __init__(self, delta_time, dimensions = [1000,1000]):
         '''
         2d array - dimensions of the world
         '''
@@ -70,11 +70,11 @@ class World():
         #kd tree for faster search
         self.kdtree = None
 
-
+        #the pheromone concentration map
         self.phero_map = PheromoneMap(dimensions, 1)
 
         #time which passes between two ticks
-        self.delta_time = 1 / 40
+        self.delta_time = delta_time
 
     def update_kdtree(self): 
         #construct kdtree
