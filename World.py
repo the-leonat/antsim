@@ -61,7 +61,7 @@ class World():
         '''
         2d array - dimensions of the world
         '''
-
+        
         self.dimensions = np.array(dimensions)
 
         #first we use a list to hold objects

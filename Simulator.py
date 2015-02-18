@@ -43,16 +43,22 @@ class Simulator():
 
         dump_dict = {}
         data_list = []
+        phero_map_list = []
+        phero_map_list.append( self.world.phero_map.phero_map )
 
+        print "start recording..."
         for x in range(n):
             self.world.update()
             #VERY IMPORTANT, copy the list!
 
             data_list.append( copy.deepcopy(self.world.world_objects) ) 
 
+        print "recorded " + str(n) + " frames."
+
         #setting up the dict to safe
         dump_dict["delta_time"] = self.world.delta_time
         dump_dict["data_list"] = data_list
+        dump_dict["phero_map_list"] = phero_map_list
         dump_dict["version"] = "0.1"
 
         
@@ -60,22 +66,16 @@ class Simulator():
 
 
 
-def create_random_objects(n):
+def create_random_objects(n, dimension = 300):
     '''
     returns a list of n antobjects with random position and direction vectors
     '''
 
 
     #returns n objects with position between (10,10) and (390,390)
-    return [Ant( np.random.uniform(-1,1, (2)) * 100, np.random.uniform(-1,1, (2)) ) for a in range(0,n)]
+    return [Ant( np.random.uniform(-1,1, (2)) * dimension, np.random.uniform(-1,1, (2)) ) for a in range(0,n)]
 
-def create_test_objects(n = 0):
-    a1 = Ant([200, 160], [0, 1])
-    a2 = Ant([220, 240], [0, -1])
-
-    return [a1,a2]
-
-def setup(n = 100, p = 50):
+def setup(n = 100):
     '''
     this is the startup function which initializes a Simulator-Object and loads the settings file
     n = number of elements to create
@@ -91,7 +91,9 @@ def setup(n = 100, p = 50):
 
 if __name__ == "__main__":
     #startup()
-    s = setup(n = 10)
+    s = setup(n = 40)
+    #s.simulate_steps()
+    #s.record(1, filename="record3.sim")
 
     pass
 

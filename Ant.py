@@ -24,7 +24,7 @@ class Ant(WorldObject):
         self.head_radius = 4
         self.head_angle = 100
 
-        self.max_turn_angle = 45
+        self.max_turn_angle = 25
 
     def __getstate__(self):
         return (self.position, self.direction, self.speed)
@@ -105,16 +105,19 @@ class Ant(WorldObject):
         # angle
         # maybe divide by max pheromone concentration
         a = c_left - c_right
-
         if np.allclose(a, 0, 1e-4):
             return False
 
-        # cap at max_angle
-        if a > self.max_turn_angle:
-            a = self.max_turn_angle
-        else:
-            if a < -1 * self.max_turn_angle:
-                a = -1 * self.max_turn_angle
+        # # cap at max_angle
+        # if a > self.max_turn_angle:
+        #     a = self.max_turn_angle
+        # else:
+        #     if a < -1 * self.max_turn_angle:
+        #         a = -1 * self.max_turn_angle
+
+        a *= self.max_turn_angle
+
+        #print c_left - c_right, a
 
         self.direction = rotate_vector(self.direction, a)
 
@@ -135,7 +138,7 @@ class Ant(WorldObject):
         put here all the movement logic
         '''
 
-        self.check_border()
+        #self.check_border()
 
         evaded = False
         trailed = False
