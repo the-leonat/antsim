@@ -91,9 +91,9 @@ def setup(n = 100):
 
 if __name__ == "__main__":
     #startup()
-    s = setup(n = 40)
+    s = setup(n = 30)
     #s.simulate_steps()
-    #s.record(1, filename="record3.sim")
+    s.record(1.5, filename="record2.sim")
 
     pass
 

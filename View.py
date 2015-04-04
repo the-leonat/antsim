@@ -14,6 +14,8 @@ import numpy as np
 import pyglet
 import cPickle as pickle
 
+import matplotlib.pyplot as plt
+
 import pyglet.window.key as key
 
 
@@ -89,14 +91,12 @@ class MainView(pyglet.window.Window):
 
 
 			label255=label*255
-			label3=np.dstack((label255,label255,label255))
+			label3=np.dstack((label255,label,label)).astype(np.uint8)
+			print label3.shape
+			print label3[0,0]
 
-			label_3d = np.empty([dim_x,dim_y,3])
-			label_3d[:,:,0] = 255            # value range of label is [0,1]
-			label_3d[:,:,1] = 255
-			label_3d[:,:,2] = label * 255
-
-			image = pyglet.image.ImageData(dim_x, dim_y, 'RGB', label_3d.data.__str__(), -dim_x*3)
+			image = pyglet.image.ImageData(dim_x, dim_y, 'RGB', label3.data.__str__())
+			#image = pyglet.image.ImageData(dim_x, dim_y, 'RGB', label3.tostring('C'))
 
 			image.anchor_x = int(dim_x / 2)
 			image.anchor_y = int(dim_y / 2)
@@ -115,6 +115,8 @@ class MainView(pyglet.window.Window):
 			if self.state_play:
 				self.state_play = False
 			else:
+				if self.current_frame == len(self.data_list) - 1:
+					self.current_frame = 0
 				self.state_play = True
 
 		## frame left
@@ -173,6 +175,7 @@ class MainView(pyglet.window.Window):
 				return
 			self.data_list = dump_dict["data_list"]
 			self.delta_time = dump_dict["delta_time"]
+			self.phero_map_list = dump_dict["phero_map_list"][0]
 			self.pheromone_image_data = self.convert_phero_map( dump_dict["phero_map_list"] )
 		except Exception, e:
 			print "file not found:", filename
@@ -195,6 +198,8 @@ class MainView(pyglet.window.Window):
 
 		if self.current_frame + 1 < len(self.data_list):
 			self.next_frame()
+		else:
+			self.state_play = False
 
 	def convert_coordinates(self, position_vector):
 		'''
@@ -210,9 +215,13 @@ class MainView(pyglet.window.Window):
 		#convert to integer array
 		return position_vector + transform_v
 
+def sp():
+	plt.imshow(view.phero_map_list)
+	plt.show()
+
 if __name__ == "__main__":
     #startup()
     view = MainView(fps=40)
-    view.load_file("record3.sim")
+    view.load_file("record2.sim")
     pyglet.app.run()
 

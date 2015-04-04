@@ -18,13 +18,13 @@ class Ant(WorldObject):
         self.direction = norm_vector(np.array(direction))
         self.speed = 100
         self.max_speed = 150
-        self.min_speed = 4
+        self.min_speed = 2
         self.length = 10
         self.center_radius = 5
         self.head_radius = 4
         self.head_angle = 100
 
-        self.max_turn_angle = 25
+        self.max_turn_angle = 75
 
     def __getstate__(self):
         return (self.position, self.direction, self.speed)
