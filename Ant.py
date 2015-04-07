@@ -17,14 +17,14 @@ class Ant(WorldObject):
 
         self.direction = norm_vector(np.array(direction))
         self.speed = 100
-        self.max_speed = 150
-        self.min_speed = 2
+        self.max_speed = 50
+        self.min_speed = 10
         self.length = 10
         self.center_radius = 5
         self.head_radius = 4
         self.head_angle = 100
 
-        self.max_turn_angle = 75
+        self.max_turn_angle = 25
 
     def __getstate__(self):
         return (self.position, self.direction, self.speed)
@@ -115,7 +115,14 @@ class Ant(WorldObject):
         #     if a < -1 * self.max_turn_angle:
         #         a = -1 * self.max_turn_angle
 
-        a *= self.max_turn_angle
+        #amplify!!
+        a *= self.max_turn_angle * 5
+
+        if a < -self.max_turn_angle:
+            a = -self.max_turn_angle
+        elif a > self.max_turn_angle:
+            a = self.max_turn_angle
+
 
         #print c_left - c_right, a
 
@@ -140,6 +147,10 @@ class Ant(WorldObject):
 
         #self.check_border()
 
+        #set pheromone concentration
+        self.world.phero_map.add_pheromone_concentration(self.position, 1.)
+
+
         evaded = False
         trailed = False
 
@@ -149,4 +160,3 @@ class Ant(WorldObject):
 
         speed = self.max_speed if not evaded else self.min_speed
         self.position = self.position + ( self.direction * speed * delta)
-

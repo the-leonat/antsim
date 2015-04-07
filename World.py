@@ -170,8 +170,7 @@ class World():
         self.update_objects()
 
         #update pheromap
-        #self.phero_map = df.diffuse(self.phero_map)
-        #self.phero_map.tick(1)
+        self.phero_map.tick(self.delta_time)
 
     def update_objects(self):
         '''

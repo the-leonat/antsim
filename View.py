@@ -36,6 +36,7 @@ class MainView(pyglet.window.Window):
 		# -----
 
 		self.current_frame = 0
+		self.number_of_frames = None
 		self.state_play = False
 
 		#can either be -1,0 or 1 (left, none, right)
@@ -58,7 +59,7 @@ class MainView(pyglet.window.Window):
 
 		center_x, center_y = self.convert_coordinates( np.array([0,0]) )
 
-		self.pheromone_image_data[0].blit(center_x, center_y, 0)
+		self.pheromone_image_data[self.current_frame].blit(center_x, center_y)
 
 		for ant in ant_list:
 			position = self.convert_coordinates(ant.position)
@@ -82,29 +83,25 @@ class MainView(pyglet.window.Window):
 		range_x = range(-500, 500, 100)
 		range_y = range(-500, 500, 100)
 
-	def convert_phero_map(self, phero_map_list):
-		image_data = [len(phero_map_list)]
+	def convert_phero_map(self, phero_map):
+		label = phero_map
+		dim_x, dim_y = phero_map.shape
 
-		for i,phero_map in enumerate(phero_map_list):
-			label = phero_map
-			dim_x, dim_y = phero_map.shape
+		#amplify values
+		label *= 10
+		label = np.clip(label, 0., 1.)
+
+		#display phero map in light red
+		label3=np.dstack((label * 255,label * 1,label * 1)).astype(np.uint8)
+
+		image = pyglet.image.ImageData(dim_x, dim_y, 'RGB', label3.data.__str__())
+		#image = pyglet.image.ImageData(dim_x, dim_y, 'RGB', label3.tostring('C'))
+
+		image.anchor_x = int(dim_x / 2)
+		image.anchor_y = int(dim_y / 2)
 
 
-			label255=label*255
-			label3=np.dstack((label255,label,label)).astype(np.uint8)
-			print label3.shape
-			print label3[0,0]
-
-			image = pyglet.image.ImageData(dim_x, dim_y, 'RGB', label3.data.__str__())
-			#image = pyglet.image.ImageData(dim_x, dim_y, 'RGB', label3.tostring('C'))
-
-			image.anchor_x = int(dim_x / 2)
-			image.anchor_y = int(dim_y / 2)
-	
-
-			image_data[i] = image
-
-		return image_data
+		return image
 
 
 
@@ -169,16 +166,30 @@ class MainView(pyglet.window.Window):
 
 	def load_file(self, filename):
 		try:
-			dump_dict = pickle.load(open(str(filename), 'rb'))
+			dump_dict = pickle.load(open(str(filename + "-objectdata"), 'rb'))
 			if dump_dict["version"] != self.VERSION:
 				print "!! Viewer Version != Simulator Version: ", self.VERSION 
 				return
 			self.data_list = dump_dict["data_list"]
 			self.delta_time = dump_dict["delta_time"]
-			self.phero_map_list = dump_dict["phero_map_list"][0]
-			self.pheromone_image_data = self.convert_phero_map( dump_dict["phero_map_list"] )
+			self.number_of_frames = dump_dict["number_of_frames"]
+			self.dimensions = dump_dict["world_dimensions"]
 		except Exception, e:
 			print "file not found:", filename
+			raise
+
+		try:
+			matrix = np.load(filename + "-numpy.npy")
+			self.pheromone_image_data = [None] * self.number_of_frames
+
+			dimx, dimy = self.dimensions
+
+			for x in range(self.number_of_frames):
+				matrix_part = matrix[(x * dimx):(dimx * (x + 1)),:]
+
+				self.pheromone_image_data[x] = self.convert_phero_map( matrix_part )
+
+		except Exception, e:
 			raise
 
 		#reset framecounter to zero
@@ -219,9 +230,9 @@ def sp():
 	plt.imshow(view.phero_map_list)
 	plt.show()
 
-if __name__ == "__main__":
-    #startup()
-    view = MainView(fps=40)
-    view.load_file("record2.sim")
-    pyglet.app.run()
+# if __name__ == "__main__":
+#     #startup()
+#     view = MainView(fps=40)
+#     view.load_file("record7")
+#     pyglet.app.run()
 
