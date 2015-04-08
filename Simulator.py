@@ -124,17 +124,61 @@ def setup(n = 100):
 
     #add some ants
     s.world.add_objects( create_random_objects(n) )
-    #s.world.add_objects( [Ant( np.array([0.,0.]), np.random.uniform(-1,1, (2)) )] )
+    s.world.add_objects( [Ant( np.array([490.,490.]), np.array([np.sqrt(2), np.sqrt(2)]) )] )
 
     return s
 
 if __name__ == "__main__":
-    #startup()
-    s = setup(n = 20)
-    #s.simulate_steps()
-    s.record(4.5, step = 10, filename="record8")
 
-    view = MainView(fps=40)
-    view.load_file("record8")
-    pyglet.app.run()
+    # defaults
+    view = False
+    view_filename = "record8"
+    view_fps = 40
 
+    record = False
+    record_filename = "record8"
+    record_time = 5.
+    record_step = 10
+
+    ant_count = 20
+
+    i=1
+    while i < len(sys.argv):
+        if sys.argv[i] == "-v":
+            view = True
+        elif sys.argv[i] == "-vf":
+            view_filename = sys.argv[i+1]
+            i += 1
+        elif sys.argv[i] == "-vfps":
+            view_fps = int(sys.argv[i+1])
+            i += 1
+
+        elif sys.argv[i] == "-r":
+            record = True
+        elif sys.argv[i] == "-rf":
+            record_filename = sys.argv[i+1]
+            i += 1
+        elif sys.argv[i] == "-rt":
+            record_time = float(sys.argv[i+1])
+            i += 1
+        elif sys.argv[i] == "-rs":
+            record_step = int(sys.argv[i+1])
+            i += 1
+
+        elif sys.argv[i] == "-ac":
+            ant_count = int(sys.argv[i+1])
+            i += 1
+
+        else:
+            print("invalid parameter")
+
+        i += 1
+
+    if record:
+        s = setup(ant_count)
+        s.record(record_time, record_step, record_filename)
+
+    if view:
+        view = MainView(view_fps)
+        view.load_file(view_filename)
+        pyglet.app.run()

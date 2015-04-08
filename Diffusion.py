@@ -31,9 +31,9 @@ class PheromoneMap():
         position = np.array((position * self.resolution) + shift, dtype=np.int)
         for i in range(position.shape[0]):
             if position[i] >= self.phero_map.shape[i]:
-                position %= self.phero_map.shape[i]
+                position[i] %= self.phero_map.shape[i]
             elif position[i] < 0:
-                position = self.phero_map.shape[i] - (-position[i] % self.phero_map.shape[i])
+                position[i] = self.phero_map.shape[i] - (-position[i] % self.phero_map.shape[i])
         return position
 
     def get_pheromone_concentration(self, position, radius):
