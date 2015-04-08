@@ -108,13 +108,6 @@ class Ant(WorldObject):
         if np.allclose(a, 0, 1e-4):
             return False
 
-        # # cap at max_angle
-        # if a > self.max_turn_angle:
-        #     a = self.max_turn_angle
-        # else:
-        #     if a < -1 * self.max_turn_angle:
-        #         a = -1 * self.max_turn_angle
-
         #amplify!!
         a *= self.max_turn_angle * 5
 
@@ -122,9 +115,6 @@ class Ant(WorldObject):
             a = -self.max_turn_angle
         elif a > self.max_turn_angle:
             a = self.max_turn_angle
-
-
-        #print c_left - c_right, a
 
         self.direction = rotate_vector(self.direction, a)
 
@@ -167,5 +157,3 @@ class Ant(WorldObject):
 
         #wrap around the edges of the world
         circuited = self.circuit_world()
-        if circuited:
-            print("circuited "+str(self.position))
