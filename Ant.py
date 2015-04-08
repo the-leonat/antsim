@@ -152,14 +152,8 @@ class Ant(WorldObject):
         put here all the movement logic
         '''
 
-        #wrap around the edges of the world
-        circuited = self.circuit_world()
-        if circuited:
-            print("circuited "+str(self.position))
-
         #set pheromone concentration
         self.world.phero_map.add_pheromone_concentration(self.position, 1.)
-
 
         evaded = False
         trailed = False
@@ -170,3 +164,8 @@ class Ant(WorldObject):
 
         speed = self.max_speed if not evaded else self.min_speed
         self.position = self.position + ( self.direction * speed * delta)
+
+        #wrap around the edges of the world
+        circuited = self.circuit_world()
+        if circuited:
+            print("circuited "+str(self.position))
