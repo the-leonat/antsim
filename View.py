@@ -46,6 +46,7 @@ class MainView(pyglet.window.Window):
 		#can either be -1,0 or 1 (left, none, right)
 		self.state_navigation = 0
 		self.VERSION = "0.2"
+		self.transform = np.array([0,0], dtype=np.int)
 
 		clock.schedule_interval(self.update_frame_count, 1. / self.fps)
 
@@ -113,7 +114,7 @@ class MainView(pyglet.window.Window):
 		dim_x, dim_y = phero_map.shape
 
 		#amplify values
-		label *= 10
+		label *= 8
 		label = np.clip(label, 0., 1.)
 
 		#display phero map in light red
@@ -148,6 +149,20 @@ class MainView(pyglet.window.Window):
 		## frame right
 		elif symbol == key.RIGHT:
 			self.state_navigation = 1
+
+		elif symbol == key.W:
+			self.transform[1] -= 50 
+			self.init_border()
+		elif symbol == key.A:
+			self.transform[0] += 50 
+			self.init_border()
+		elif symbol == key.S:
+			self.transform[1] += 50
+			self.init_border() 
+		elif symbol == key.D:
+			self.transform[0] -= 50 
+			self.init_border()
+
 
 	def on_key_release(self, symbol, modifiers):
 		## reset navigation
@@ -258,7 +273,7 @@ class MainView(pyglet.window.Window):
 		transform_v = np.array([screen_x / 2, screen_y / 2])
 
 		#convert to integer array
-		return position_vector + transform_v
+		return position_vector + transform_v + self.transform
 
 def sp():
 	plt.imshow(view.phero_map_list)
