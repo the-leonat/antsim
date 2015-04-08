@@ -25,6 +25,9 @@ class MainView(pyglet.window.Window):
 
 		self.label_time_passed = pyglet.text.Label('0')
 		self.label_current_frame = pyglet.text.Label('0', x = 100)
+		
+		#vertex list
+		self.border = None
 
 		self.fps = fps
 
@@ -34,6 +37,7 @@ class MainView(pyglet.window.Window):
 		self.pheromone_image_data = None
 		self.record_step = None
 		self.number_of_frames = None
+		self.dimensions = None
 		# -----
 
 		self.current_frame = 0
@@ -44,6 +48,21 @@ class MainView(pyglet.window.Window):
 		self.VERSION = "0.2"
 
 		clock.schedule_interval(self.update_frame_count, 1. / self.fps)
+
+	def init_border(self):
+		cx, cy = self.convert_coordinates(np.array([0,0]))
+		print cx,cy
+		sx, sy = np.array(self.dimensions, dtype=np.float) / 2.
+
+		self.border = pyglet.graphics.vertex_list(4,
+    		("v2f", (
+				cx + sx, cy + sy, 
+				cx + sx, cy - sy, 
+				cx - sx, cy - sy, 
+				cx - sx, cy + sy
+				)
+    		)
+)
 
 	def on_draw(self):
 		if not self.data_list: return
@@ -62,6 +81,8 @@ class MainView(pyglet.window.Window):
 		center_x, center_y = self.convert_coordinates( np.array([0,0]) )
 
 		self.pheromone_image_data[self.current_frame].blit(center_x, center_y)
+
+		self.border.draw(pyglet.gl.GL_LINE_LOOP)
 
 		for ant in ant_list:
 			position = self.convert_coordinates(ant.position)
@@ -84,6 +105,8 @@ class MainView(pyglet.window.Window):
 	def draw_grid(self):
 		range_x = range(-500, 500, 100)
 		range_y = range(-500, 500, 100)
+
+
 
 	def convert_phero_map(self, phero_map):
 		label = phero_map
@@ -136,6 +159,10 @@ class MainView(pyglet.window.Window):
 
 	def on_resize(self, width, height):
 		self.state_play = False
+
+		#reinit the border
+		self.init_border()
+
 
 		#call the parent class on_resize
 		return super(MainView, self).on_resize(width, height)
@@ -197,6 +224,10 @@ class MainView(pyglet.window.Window):
 
 		#reset framecounter to zero
 		self.current_frame = 0
+
+		#init border dependet on dimension
+		self.init_border()
+
 
 	def update_frame_count(self, dt):
 		if not self.data_list: return
