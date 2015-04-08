@@ -12,7 +12,7 @@ import sys
 
 import copy
 
-DELTA = 1 / 40.
+DELTA = 1 / 20.
 DIMENSIONS = [1000,1000]
 
 
