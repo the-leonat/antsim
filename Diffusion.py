@@ -7,7 +7,7 @@ class PheromoneMap():
         #elements
         self.resolution = resolution
 
-        self.phero_map = np.zeros(tuple(dimension * resolution), dtype=np.float32)
+        self.phero_map = np.zeros(tuple(dimension * resolution), dtype=np.float16)
         #self.phero_map.fill(0.5)
         #self.phero_map = np.random.normal(0.5, 0.5, tuple(dimension * resolution))
         #self.phero_map = np.zeros(tuple(dimension * resolution))
@@ -16,15 +16,13 @@ class PheromoneMap():
 
         #self.diffusion_matrix = np.array([[0.0,0.2,0.0],[0.2,0.0,0.2],[0.0,0.2,0.0]])
         #self.diffusion_matrix = np.array([[0.0625,0.0625,0.0625],[0.0625,0.5,0.0625],[0.0625,0.0625,0.0625]], dtype=np.float32)
-        self.diffusion_matrix = np.array([[0.1,0.1,0.1],[0.1,0.2,0.1],[0.1,0.1,0.1]], dtype=np.float32)
+        self.diffusion_matrix = np.array([[0.1,0.1,0.1],[0.1,0.2,0.1],[0.1,0.1,0.1]], dtype=np.float16)
 
         #self.diffusion_matrix = np.array([[.5, 0.01],[0.01, 0.01]])
 
 
     def tick(self, delta):
-        #print "before", self.phero_map.shape
-        self.phero_map = scipy.signal.convolve(self.phero_map, self.diffusion_matrix, mode="same")
-        #print "after", self.phero_map.shape
+        self.phero_map = scipy.signal.fftconvolve(self.phero_map, self.diffusion_matrix, mode="same")
 
     def convert_coordinates(self, position):
         shift = np.array(self.phero_map.shape) / 2.
@@ -40,7 +38,7 @@ class PheromoneMap():
         #return and disort
         y,x = self.convert_coordinates(position)
 
-        return self.phero_map[x,y] + np.random.normal(0., 0.01)
+        return self.phero_map[x,y] + np.random.normal(0., 0.015)
 
     def set_pheromone_concentration(self, position, amount):
         y,x = self.convert_coordinates(position)
