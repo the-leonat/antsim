@@ -75,7 +75,7 @@ class Ant(WorldObject):
         pos_in_top_range = self.world.get_positions_in_range_and_radius_kd(self.position, self.direction, self.head_radius, self.head_angle)
 
         if pos_in_center_range.size == 0 and pos_in_top_range.size == 0:
-            return 
+            return
         elif pos_in_center_range.size > 0 and pos_in_top_range.size == 0:
             pos_in_range = pos_in_center_range
         elif pos_in_center_range.size == 0 and pos_in_top_range.size > 0:
@@ -130,22 +130,32 @@ class Ant(WorldObject):
 
         return True
 
-    def check_border(self):
-        border = self.world.dimensions / 2.
+    def circuit_world(self):
+        shift = self.world.dimensions / 2
 
-        new_pos = self.position + self.direction
-        if not(border[0] > new_pos[0] > -border[0] and border[1] > new_pos[1] > -border[1]):
-            self.direction = self.direction * -1
-            print "out of bounds"
+        circuited = False
+        pos = self.position + shift
 
+        for i in range(pos.shape[0]):
+            if pos[i] >= self.world.dimensions[i]:
+                pos[i] %= self.world.dimensions[i]
+                circuited = True
+            elif pos[i] < 0:
+                pos[i] = self.world.dimensions[i] - (-pos[i] % self.world.dimensions[i])
+                circuited = True
 
+        self.position = pos - shift
+        return circuited
 
     def tick(self, delta):
         '''
         put here all the movement logic
         '''
 
-        #self.check_border()
+        #wrap around the edges of the world
+        circuited = self.circuit_world()
+        if circuited:
+            print("circuited "+str(self.position))
 
         #set pheromone concentration
         self.world.phero_map.add_pheromone_concentration(self.position, 1.)

@@ -61,7 +61,7 @@ class World():
         '''
         2d array - dimensions of the world
         '''
-        
+
         self.dimensions = np.array(dimensions)
 
         #first we use a list to hold objects
@@ -76,14 +76,29 @@ class World():
         #time which passes between two ticks
         self.delta_time = delta_time
 
-    def update_kdtree(self): 
+    def update_kdtree(self):
         #construct kdtree
-        matrix = np.empty((2, len(self.world_objects)), dtype=np.float)
- 
-        for i,o in enumerate(self.world_objects):
-            matrix[:,i] = o.position
+        point_list = []
 
-        self.kdtree = cKDTree(matrix.T, 50)
+        shift = self.dimensions / 2.
+        border = 10.
+        for o in self.world_objects:
+            point_list.append(o.position)
+
+            # add object onto the opposite side but outside world
+            for j in range(self.dimensions.shape[0]):
+                if o.position[j] >= shift[j] - border:
+                    col_pos = o.position.copy()
+                    d = shift[j] - col_pos[j]
+                    col_pos[j] = -shift[j] - d
+                    point_list.append(col_pos)
+                elif o.position[j] < -shift[j] + border:
+                    col_pos = o.position.copy()
+                    d = col_pos[j] + shift[j]
+                    col_pos[j] = shift[j] - d
+                    point_list.append(col_pos)
+
+        self.kdtree = cKDTree(np.array(point_list, dtype=np.float), 50)
 
     def get_objects_in_range(self, pos, radius):
         '''returns a list of objects in a given range

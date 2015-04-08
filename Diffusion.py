@@ -17,10 +17,10 @@ class PheromoneMap():
         #self.diffusion_matrix = np.array([[0.0,0.2,0.0],[0.2,0.0,0.2],[0.0,0.2,0.0]])
         #self.diffusion_matrix = np.array([[0.0625,0.0625,0.0625],[0.0625,0.5,0.0625],[0.0625,0.0625,0.0625]], dtype=np.float32)
         self.diffusion_matrix = np.array([[0.1,0.1,0.1],[0.1,0.2,0.1],[0.1,0.1,0.1]], dtype=np.float32)
-        
+
         #self.diffusion_matrix = np.array([[.5, 0.01],[0.01, 0.01]])
 
-        
+
     def tick(self, delta):
         #print "before", self.phero_map.shape
         self.phero_map = scipy.signal.convolve(self.phero_map, self.diffusion_matrix, mode="same")
@@ -28,7 +28,13 @@ class PheromoneMap():
 
     def convert_coordinates(self, position):
         shift = np.array(self.phero_map.shape) / 2.
-        return np.array((position * self.resolution) + shift, dtype=np.int)
+        position = np.array((position * self.resolution) + shift, dtype=np.int)
+        for i in range(position.shape[0]):
+            if position[i] >= self.phero_map.shape[i]:
+                position %= self.phero_map.shape[i]
+            elif position[i] < 0:
+                position = self.phero_map.shape[i] - (-position[i] % self.phero_map.shape[i])
+        return position
 
     def get_pheromone_concentration(self, position, radius):
         #return and disort
