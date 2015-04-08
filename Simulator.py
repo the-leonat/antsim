@@ -5,8 +5,6 @@ from Ant import *
 from View import MainView
 
 import time
-import pygame
-import pygame.gfxdraw
 import numpy as np
 import pyglet
 import cPickle as pickle
@@ -43,36 +41,49 @@ class Simulator():
         print "time per frame: ", (time.clock() - t_start) / n
 
 
-    def record(self, seconds, filename = "record.sim"):
+    def record(self, seconds, step = 1, filename = "record.sim"):
+        #number of steps to simulate
         n = int(seconds / self.world.delta_time)
+
+        #number of steps to record
+        nr = int(n / step)
+        #loop increment for recorded steps
+        record_count = 0
+
 
         dump_dict = {}
         data_list = []
 
         dimx, dimy = DIMENSIONS
 
-        phero_map_matrix = np.zeros(( dimx * n, dimy ), dtype=np.float)
+        phero_map_matrix = np.zeros(( dimx * nr, dimy ), dtype=np.float)
 
         print "#start recording..."
+
         for x in range(n):
             self.world.update()
             #VERY IMPORTANT, copy the list!
 
-            data_list.append( copy.deepcopy(self.world.world_objects) ) 
+            if x % step == 0:
+                data_list.append( copy.deepcopy(self.world.world_objects) )
+                phero_map_matrix[(record_count * dimx):(dimx * (record_count + 1)),:] = self.world.phero_map.phero_map
 
-            phero_map_matrix[(x * dimx):(dimx * (x + 1)),:] = self.world.phero_map.phero_map
+                record_count += 1
 
             self.print_progress("#simulating frames... ", x, n)
 
 
-        print "#recorded " + str(n) + " frames."
+        print "#simulated " + str(n) + " frames."
+        print "#recorded " + str(record_count) + " frames."
 
-        #setting up the dict to safe
+
+        #setting up the dict to save
         dump_dict["delta_time"] = self.world.delta_time
         dump_dict["data_list"] = data_list
-        dump_dict["version"] = "0.1"
+        dump_dict["version"] = "0.2"
         dump_dict["number_of_frames"] = n
         dump_dict["world_dimensions"] = DIMENSIONS
+        dump_dict["record_step"] = step
 
         print "#pickle object data..."
 
@@ -119,11 +130,11 @@ def setup(n = 100):
 
 if __name__ == "__main__":
     #startup()
-    s = setup(n = 30)
+    s = setup(n = 20)
     #s.simulate_steps()
-    s.record(4, filename="record7")
+    s.record(4.5, step = 10, filename="record8")
 
     view = MainView(fps=40)
-    view.load_file("record7")
+    view.load_file("record8")
     pyglet.app.run()
 

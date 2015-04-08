@@ -32,22 +32,24 @@ class MainView(pyglet.window.Window):
 		self.delta_time = None
 		self.data_list = None
 		self.pheromone_image_data = None
-		self.VERSION = "0.1"
+		self.record_step = None
+		self.number_of_frames = None
 		# -----
 
 		self.current_frame = 0
-		self.number_of_frames = None
 		self.state_play = False
 
 		#can either be -1,0 or 1 (left, none, right)
 		self.state_navigation = 0
+		self.VERSION = "0.2"
 
 		clock.schedule_interval(self.update_frame_count, 1. / self.fps)
 
 	def on_draw(self):
 		if not self.data_list: return
 
-		time_passed = self.delta_time * self.current_frame
+		time_passed = self.delta_time * self.current_frame * self.record_step
+
 		self.label_time_passed.text = "{:.2f}".format(time_passed) + "s"
 		self.label_current_frame.text = "f_num:" + str(self.current_frame + 1) + "/" + str(len(self.data_list))
 
@@ -174,6 +176,7 @@ class MainView(pyglet.window.Window):
 			self.delta_time = dump_dict["delta_time"]
 			self.number_of_frames = dump_dict["number_of_frames"]
 			self.dimensions = dump_dict["world_dimensions"]
+			self.record_step = dump_dict["record_step"]
 		except Exception, e:
 			print "file not found:", filename
 			raise
@@ -230,9 +233,9 @@ def sp():
 	plt.imshow(view.phero_map_list)
 	plt.show()
 
-# if __name__ == "__main__":
-#     #startup()
-#     view = MainView(fps=40)
-#     view.load_file("record7")
-#     pyglet.app.run()
+if __name__ == "__main__":
+    #startup()
+    view = MainView(fps=40)
+    view.load_file("record8")
+    pyglet.app.run()
 
