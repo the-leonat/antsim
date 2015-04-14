@@ -2,6 +2,10 @@ from __future__ import division
 import numpy as np
 from Diffusion import *
 from scipy.spatial import cKDTree
+
+import yaml
+config = yaml.load(open("config.yml"))
+
 ### helper functions ###
 
 def get_distance(v1, v2):
@@ -57,12 +61,12 @@ class World():
     class World holds a set of objects which must have a positionvector [x,y]
     It can give back distances between objects or return a set of objects in a given range
     '''
-    def __init__(self, delta_time, dimensions = [1000,1000]):
+    def __init__(self):
         '''
         2d array - dimensions of the world
         '''
 
-        self.dimensions = np.array(dimensions)
+        self.dimensions = np.array(config["world_dimension"])
 
         #first we use a list to hold objects
         self.world_objects = []
@@ -71,10 +75,10 @@ class World():
         self.kdtree = None
 
         #the pheromone concentration map
-        self.phero_map = PheromoneMap(dimensions, 1)
+        self.phero_map = PheromoneMap()
 
         #time which passes between two ticks
-        self.delta_time = delta_time
+        self.delta_time = config["delta"]
 
     def update_kdtree(self):
         #construct kdtree

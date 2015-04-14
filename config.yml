@@ -1,0 +1,19 @@
+
+#global config
+delta: 0.05
+world_dimension: [1000, 1000]
+
+#ant config
+ant:
+  #movement
+  max_speed: 50
+  min_speed: 10
+  max_turn_angle: 25
+
+  #proportions
+  length: 10
+  center_radius: 5
+  head_radius: 4
+  head_angle: 100
+
+
