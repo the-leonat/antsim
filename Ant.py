@@ -3,6 +3,10 @@ from World import *
 
 import numpy as np
 
+import yaml
+config = yaml.load(open("config.yml"))
+
+
 class Ant(WorldObject):
     '''
     class Ant inherits from WorldObject and additionally holds a direction vector ...
@@ -17,14 +21,15 @@ class Ant(WorldObject):
 
         self.direction = norm_vector(np.array(direction))
         self.speed = 100
-        self.max_speed = 50
-        self.min_speed = 10
-        self.length = 10
-        self.center_radius = 5
-        self.head_radius = 4
-        self.head_angle = 100
 
-        self.max_turn_angle = 25
+        self.max_speed = config["ant"]["max_speed"]
+        self.min_speed = config["ant"]["min_speed"]
+        self.max_turn_angle = config["ant"]["max_turn_angle"]
+
+        self.length = config["ant"]["length"]
+        self.center_radius = config["ant"]["center_radius"]
+        self.head_radius = config["ant"]["head_radius"]
+        self.head_angle = config["ant"]["head_angle"]
 
     def __getstate__(self):
         return (self.position, self.direction, self.speed)

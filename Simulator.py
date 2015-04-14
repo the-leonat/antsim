@@ -12,8 +12,8 @@ import sys
 
 import copy
 
-DELTA = 1 / 20.
-DIMENSIONS = [1000,1000]
+import yaml
+config = yaml.load(open("config.yml"))
 
 
 class Simulator():
@@ -21,10 +21,10 @@ class Simulator():
     This class simulates the behavior of worldobjects over time
     '''
 
-    def __init__(self, delta, dimensions):
+    def __init__(self):
         #always use set_mode function to set mode. dont set string directly
 
-        self.world = World(delta, dimensions)
+        self.world = World()
 
     def simulate_steps(self, n = 1):
         '''
@@ -43,7 +43,7 @@ class Simulator():
 
     def record(self, seconds, step = 1, filename = "record.sim"):
         #number of steps to simulate
-        n = int(seconds / self.world.delta_time)
+        n = int(seconds / config["delta"])
 
         #number of steps to record
         nr = int(n / step)
@@ -54,7 +54,7 @@ class Simulator():
         dump_dict = {}
         data_list = []
 
-        dimx, dimy = DIMENSIONS
+        dimx, dimy = config["world_dimension"]
 
         phero_map_matrix = np.zeros(( dimx * nr, dimy ), dtype=np.float)
 
@@ -78,11 +78,11 @@ class Simulator():
 
 
         #setting up the dict to save
-        dump_dict["delta_time"] = self.world.delta_time
+        dump_dict["delta_time"] = config["delta"]
         dump_dict["data_list"] = data_list
         dump_dict["version"] = "0.2"
         dump_dict["number_of_frames"] = n
-        dump_dict["world_dimensions"] = DIMENSIONS
+        dump_dict["world_dimensions"] = config["world_dimension"]
         dump_dict["record_step"] = step
 
         print "#pickle object data..."
@@ -120,7 +120,7 @@ def setup(n = 100):
     '''
 
     #creates a simulator instance
-    s = Simulator(DELTA, DIMENSIONS)
+    s = Simulator()
 
     #add some ants
     s.world.add_objects( create_random_objects(n) )
