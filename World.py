@@ -61,14 +61,9 @@ class World():
     class World holds a set of objects which must have a positionvector [x,y]
     It can give back distances between objects or return a set of objects in a given range
     '''
+
     def __init__(self):
-        '''
-        2d array - dimensions of the world
-        '''
-
         self.dimensions = np.array(config["world_dimension"])
-
-        #first we use a list to hold objects
         self.world_objects = []
 
         #kd tree for faster search
@@ -79,6 +74,28 @@ class World():
 
         #time which passes between two ticks
         self.delta_time = config["delta"]
+
+    def to_dict(self):
+        d = {}
+        d["dimensions"] = self.dimensions
+        d["delta_time"] = self.delta_time
+        d["phero_map"] = self.phero_map.to_dict()
+        d["world_objects"] = self.world_objects_to_dict()
+        return d
+
+    def world_objects_to_dict(self, type=None):
+        objects = []
+        for o in self.world_objects:
+            objects.append(o.to_dict())
+        return objects
+
+    def world_objects_to_numpy(self, type=None):
+        arr = np.zeros((2, len(self.world_objects), 2))
+        for i in range(len(self.world_objects)):
+            arr[0,i,:] = self.world_objects[i].position
+            arr[1,i,:] = self.world_objects[i].direction
+        return arr
+
 
     def update_kdtree(self):
         #construct kdtree
@@ -178,29 +195,22 @@ class World():
 
     def add_objects(self, object_list):
         for o in object_list:
+            o.world = self
             self.add_object(o)
 
     def remove_all_objects(self):
         self.world_objects = []
 
+    def tick(self):
+        # update kdtree for fast neighbour lookup
+        self.update_kdtree()
 
-    #update objects
-    def update(self):
-        self.update_objects()
+        # tick objects
+        for o in self.world_objects:
+            o.tick(self.delta_time)
 
         #update pheromap
         self.phero_map.tick(self.delta_time)
-
-    def update_objects(self):
-        '''
-        iterates through all objects and calls the tick-method
-        '''
-        #update kdtree
-        self.update_kdtree()
-
-        #call the tick method
-        for o in self.world_objects:
-            o.tick(self.delta_time)
 
 
 class WorldObject():
@@ -209,12 +219,24 @@ class WorldObject():
     '''
 
     #this list defines the different object-types which can be later used as labels or for type-filtering
-    object_types = ["ant", "pheromone"]
+    object_types = ["ant"]
 
     def __init__(self, position, world_instance = None):
         self.position = np.array(position, dtype=float)
-        self.type = ""
+        self.type = None
         self.world = world_instance
+
+    def to_dict(self):
+        d = {}
+        d["position"] = self.position
+        d["type"] = self.type
+        return d
+
+    def set_type(self, typestring):
+        if typestring in WorldObject.object_types:
+            self.type = typestring
+        else:
+            self.type = None
 
     def is_type(self, typestring):
         if self.type == typestring:

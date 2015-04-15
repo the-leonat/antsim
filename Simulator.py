@@ -3,11 +3,11 @@ import Settings as settings
 from World import *
 from Ant import *
 from View import MainView
+from Storage import *
 
 import time
 import numpy as np
 import pyglet
-import cPickle as pickle
 import sys
 
 import copy
@@ -21,9 +21,9 @@ class Simulator():
     This class simulates the behavior of worldobjects over time
     '''
 
-    def __init__(self):
-        #always use set_mode function to set mode. dont set string directly
+    buffer_size = 100
 
+    def __init__(self):
         self.world = World()
 
     def simulate_steps(self, n = 1):
@@ -36,37 +36,33 @@ class Simulator():
 
         for x in range(0,n):
             #update the world model
-            self.world.update()
+            self.world.tick()
 
         print "time per frame: ", (time.clock() - t_start) / n
 
 
     def record(self, seconds, step = 1, filename = "record.sim"):
-        #number of steps to simulate
-        n = int(seconds / config["delta"])
 
-        #number of steps to record
-        nr = int(n / step)
+        # new storage object
+        sto = Storage(filename, 100)
+        sto.create_group("ant")
+        sto.create_group("phero")
+
         #loop increment for recorded steps
         record_count = 0
 
-
-        dump_dict = {}
-        data_list = []
-
-        dimx, dimy = config["world_dimension"]
-
-        phero_map_matrix = np.zeros(( dimx * nr, dimy ), dtype=np.float)
-
         print "#start recording..."
 
+        #number of steps to simulate
+        n = int(seconds / self.world.delta_time)
         for x in range(n):
-            self.world.update()
-            #VERY IMPORTANT, copy the list!
+            self.world.tick()
 
             if x % step == 0:
-                data_list.append( copy.deepcopy(self.world.world_objects) )
-                phero_map_matrix[(record_count * dimx):(dimx * (record_count + 1)),:] = self.world.phero_map.phero_map
+                dict = {}
+                dict["ant"] = self.world.world_objects_to_numpy()
+                dict["phero"] = self.world.phero_map.phero_map
+                sto.append(dict)
 
                 record_count += 1
 
@@ -76,23 +72,17 @@ class Simulator():
         print "#simulated " + str(n) + " frames."
         print "#recorded " + str(record_count) + " frames."
 
+        sto.set_attr("meta", "version", "0.3")
+        sto.set_attr("meta", "frame_count", n)
+        sto.set_attr("meta", "record_step", step)
 
-        #setting up the dict to save
-        dump_dict["delta_time"] = config["delta"]
-        dump_dict["data_list"] = data_list
-        dump_dict["version"] = "0.2"
-        dump_dict["number_of_frames"] = n
-        dump_dict["world_dimensions"] = config["world_dimension"]
-        dump_dict["record_step"] = step
+        sto.set_attr("meta", "world_dimensions", self.world.dimensions)
+        sto.set_attr("meta", "world_delta_time", self.world.delta_time)
 
-        print "#pickle object data..."
+        sto.set_attr("meta", "phero_resolution", self.world.phero_map.resolution)
 
-        pickle.dump(dump_dict, open( filename + "-objectdata", "wb" ))
-
-        print "#saving pheromone data array..."
-
-        #saving the numpy phero matrix
-        np.save(filename + "-numpy", phero_map_matrix)
+        # write remaining changes to disk
+        sto.finish()
 
         print "#all done!"
 
@@ -109,7 +99,6 @@ def create_random_objects(n, dimension = 300):
     returns a list of n antobjects with random position and direction vectors
     '''
 
-
     #returns n objects with position between (10,10) and (390,390)
     return [Ant( np.random.uniform(-1,1, (2)) * dimension, np.random.uniform(-1,1, (2)) ) for a in range(0,n)]
 
@@ -124,7 +113,6 @@ def setup(n = 100):
 
     #add some ants
     s.world.add_objects( create_random_objects(n) )
-    s.world.add_objects( [Ant( np.array([490.,490.]), np.array([np.sqrt(2), np.sqrt(2)]) )] )
 
     return s
 
@@ -132,11 +120,11 @@ if __name__ == "__main__":
 
     # defaults
     view = False
-    view_filename = "record8"
+    view_filename = "record.hdf5"
     view_fps = 40
 
     record = False
-    record_filename = "record8"
+    record_filename = "record.hdf5"
     record_time = 5.
     record_step = 10
 

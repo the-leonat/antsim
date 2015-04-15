@@ -12,38 +12,39 @@ class Ant(WorldObject):
     class Ant inherits from WorldObject and additionally holds a direction vector ...
     '''
 
+    # speed per second
+    max_speed = config["ant"]["max_speed"]
+    min_speed = config["ant"]["min_speed"]
+    max_turn_angle = config["ant"]["max_turn_angle"]
+
+    length = config["ant"]["length"]
+    center_radius = config["ant"]["center_radius"]
+    head_radius = config["ant"]["head_radius"]
+    head_angle = config["ant"]["head_angle"]
+
     def __init__(self, position, direction, world_instance = None):
         WorldObject.__init__(self, position, world_instance)
-
-        #NOTE: All elements are relative to one second!
+        self.set_type("ant")
 
         #norm the direction to 1
-
         self.direction = norm_vector(np.array(direction))
-        self.speed = 100
+        self.speed = Ant.min_speed
 
-        self.max_speed = config["ant"]["max_speed"]
-        self.min_speed = config["ant"]["min_speed"]
-        self.max_turn_angle = config["ant"]["max_turn_angle"]
-
-        self.length = config["ant"]["length"]
-        self.center_radius = config["ant"]["center_radius"]
-        self.head_radius = config["ant"]["head_radius"]
-        self.head_angle = config["ant"]["head_angle"]
-
-    def __getstate__(self):
-        return (self.position, self.direction, self.speed)
-
-    def __setstate__(self, state):
-        self.position, self.direction, self.speed = state
+    def to_dict(self):
+        d = {}
+        d["position"] = self.position
+        d["type"] = self.type
+        d["direction"] = self.direction
+        d["speed"] = self.speed
+        return d
 
     def get_left_antenna_position(self):
         pos_head = self.get_head_position()
-        return pos_head + rotate_vector(self.direction * self.head_radius, self.head_angle / 2)
+        return pos_head + rotate_vector(self.direction * Ant.head_radius, Ant.head_angle / 2)
 
     def get_right_antenna_position(self):
         pos_head = self.get_head_position()
-        return pos_head + rotate_vector(self.direction * self.head_radius, 360 - self.head_angle / 2)
+        return pos_head + rotate_vector(self.direction * Ant.head_radius, 360 - Ant.head_angle / 2)
 
     def get_head_position(self):
         return self.position + self.direction * (self.length / 2)
@@ -65,8 +66,8 @@ class Ant(WorldObject):
         o_turn_angle, turn_angle, orientation = get_oriented_angle(self.direction, self.direction + collision_vector)
 
         #check if angle exceeds max angle
-        if turn_angle > self.max_turn_angle * delta:
-            o_turn_angle = self.max_turn_angle * orientation * delta
+        if turn_angle > Ant.max_turn_angle * delta:
+            o_turn_angle = Ant.max_turn_angle * orientation * delta
 
         #rotate the vector
         new_direction = rotate_vector(self.direction, o_turn_angle)
@@ -77,7 +78,7 @@ class Ant(WorldObject):
         #this is the main collision method
 
         pos_in_center_range = self.world.get_positions_in_range_kd(self.position, self.center_radius)
-        pos_in_top_range = self.world.get_positions_in_range_and_radius_kd(self.position, self.direction, self.head_radius, self.head_angle)
+        pos_in_top_range = self.world.get_positions_in_range_and_radius_kd(self.position, self.direction, Ant.head_radius, Ant.head_angle)
 
         if pos_in_center_range.size == 0 and pos_in_top_range.size == 0:
             return
@@ -104,8 +105,8 @@ class Ant(WorldObject):
         pos_right = self.get_right_antenna_position()
 
         # concentrations
-        c_left = self.world.phero_map.get_pheromone_concentration(pos_left, self.head_radius)
-        c_right = self.world.phero_map.get_pheromone_concentration(pos_right, self.head_radius)
+        c_left = self.world.phero_map.get_pheromone_concentration(pos_left, Ant.head_radius)
+        c_right = self.world.phero_map.get_pheromone_concentration(pos_right, Ant.head_radius)
 
         # angle
         # maybe divide by max pheromone concentration
@@ -157,8 +158,8 @@ class Ant(WorldObject):
         if not evaded:
             trailed = self.trail_pheromone()
 
-        speed = self.max_speed if not evaded else self.min_speed
-        self.position = self.position + ( self.direction * speed * delta)
+        self.speed = Ant.max_speed if not evaded else Ant.min_speed
+        self.position = self.position + ( self.direction * self.speed * self.world.delta_time)
 
         #wrap around the edges of the world
         circuited = self.circuit_world()
