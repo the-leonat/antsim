@@ -38,7 +38,7 @@ class PheromoneMap():
 
         # convolve to blur pheromone
         #self.phero_map = scipy.signal.fftconvolve(self.phero_map, self.diffusion_matrix, mode="same")
-        scipy.ndimage.filters.convolve(self.phero_map, self.diffusion_matrix, output=self.phero_map, mode="wrap")
+        scipy.ndimage.filters.convolve(self.phero_map, self.diffusion_matrix, output=self.phero_map, mode="constant")
 
     def convert_coordinates(self, position):
         shift = np.array(self.phero_map.shape) / 2.
