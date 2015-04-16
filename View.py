@@ -31,7 +31,6 @@ class MainView(pyglet.window.Window):
 
         #set by input file ---
         self.delta_time = None
-        self.data_list = None
         self.pheromone_image_data = None
         self.record_step = None
         self.number_of_frames = None
@@ -72,12 +71,11 @@ class MainView(pyglet.window.Window):
 
         #get the right frame of data
         ant_numpy_list = self.storage.get("ant", self.current_frame)
-        print(ant_numpy_list)
         ant_list = []
-        for i in range(ant_numpy_list.shape[0]):
+        for i in range(ant_numpy_list.shape[1]):
             d = {}
-            ant_list[i]["position"] = ant_numpy_list[i,0,:]
-            ant_list[i]["direction"] = ant_numpy_list[i,1,:]
+            d["position"] = ant_numpy_list[0,i,:]
+            d["direction"] = ant_numpy_list[1,i,:]
             ant_list.append(d)
 
         #-------- draw ---------
@@ -101,9 +99,9 @@ class MainView(pyglet.window.Window):
                 ("v2f", direction_line)
             )
 
-            # pyglet.graphics.draw(1, pyglet.gl.GL_POINTS,
-      #           ('v2f', position ), ('c4B', (255,0,0,255))
-            # )
+            '''pyglet.graphics.draw(1, pyglet.gl.GL_POINTS,
+                ('v2f', position ), ('c4B', (255,0,0,255))
+            )'''
 
 
         self.label_time_passed.draw()
@@ -116,7 +114,7 @@ class MainView(pyglet.window.Window):
 
 
     def convert_phero_map(self, phero_map):
-        label = phero_map
+        label = phero_map.copy()
         dim_x, dim_y = phero_map.shape
 
         #amplify values
@@ -190,22 +188,18 @@ class MainView(pyglet.window.Window):
 
     #here work needs to be done
     def next_frame(self, howmany = 1):
-        if not self.data_list: return
-
-        if self.current_frame + howmany > len(self.data_list) - howmany:
+        if self.current_frame + howmany > self.storage.index - howmany:
             self.current_frame = 0
         else:
             #stop at border
-            if self.current_frame == len(self.data_list) - 2:
+            if self.current_frame == self.storage.index - 2:
                 self.state_navigation = 0
 
             self.current_frame += howmany
 
     def previous_frame(self):
-        if not self.data_list: return
-
         if self.current_frame - 1 < 0:
-            self.current_frame = len(self.data_list) - 1
+            self.current_frame = self.storage.index - 1
         else:
             #stop at border
             if self.current_frame == 1:
@@ -234,8 +228,6 @@ class MainView(pyglet.window.Window):
 
 
     def update_frame_count(self, dt):
-        if not self.data_list: return
-
         if self.state_navigation == 1:
             self.state_play = False
             self.next_frame()
@@ -245,7 +237,7 @@ class MainView(pyglet.window.Window):
 
         if not self.state_play: return
 
-        if self.current_frame + 1 < len(self.data_list):
+        if self.current_frame + 1 < self.storage.index:
             self.next_frame()
         else:
             self.state_play = False
