@@ -11,33 +11,52 @@ class Storage():
         filename:       the filename or path of the file to write and read
         buffer_size:    max size of the buffer to hold before writing to disk
         '''
-        self.index = 0
-
         self.file = h5py.File(file_name, "a")
 
-        if not "data" in self.file:
-            self.data_group = self.file.create_group("data")
-        else:
-            self.data_group = self.file["data"]
+        self.index = 0
 
-        if not "meta" in self.file:
-            self.meta_group = self.file.create_group("meta")
-        else:
-            self.meta_group = self.file["meta"]
-            try:
-                self.index = self.get_attr("meta", "storage_index")
-            except:
-                pass
-
-        self.dset_current = 0
+        self.dset_current = -1
+        self.dset_current_changed = False
         self.dset_index = 0
 
         self.buffer_size = buffer_size
         self.buffer_index = 0
         self.buffer_offset = 0
         self.buffer = {}
+
+        if not "meta" in self.file:
+            # file just created
+            print("Storage: created file " + file_name)
+            self.meta_group = self.file.create_group("meta")
+        else:
+            # file read, try to recall relevant fields from metadata
+            print("Storage: reading file " + file_name)
+            self.meta_group = self.file["meta"]
+            try:
+                self.index = self.get_attr("meta", "storage_index")
+            except:
+                pass
+            try:
+                self.buffer_size = self.get_attr("meta", "storage_buffer_size")
+            except:
+                pass
+            try:
+                self.dset_index = self.get_attr("meta", "storage_dset_index")
+            except:
+                pass
+
+        if not "data" in self.file:
+            # file just created
+            self.data_group = self.file.create_group("data")
+        else:
+            # file read
+            self.data_group = self.file["data"]
+
+
         for group_name in self.data_group:
             self.buffer[group_name] = [ np.zeros((1)) ] * self.buffer_size
+
+        self.read_dset(0)
 
         return
 
@@ -48,7 +67,10 @@ class Storage():
         '''Make sure all reamaining write operations are finished before returning.
         '''
 
+        # save relevant fields for recall
         self.set_attr("meta", "storage_index", self.index)
+        self.set_attr("meta", "storage_buffer_size", self.buffer_size)
+        self.set_attr("meta", "storage_dset_index", self.dset_index)
 
         # write remainig data to disk
         self.write_dset(self.dset_index)
@@ -123,9 +145,7 @@ class Storage():
         self.buffer_index += 1
         self.index += 1
 
-        # check if buffer full
-
-
+        self.dset_current_changed = True
         return True
 
     def set(self, i, dict):
@@ -149,6 +169,7 @@ class Storage():
 
         for group_name in dict:
             self.buffer[group_name][i - self.buffer_offset] = dict[group_name]
+            self.dset_current_changed = True
         return True
 
     def get(self, group_name, i):
@@ -166,8 +187,12 @@ class Storage():
         return self.buffer[group_name][i - self.buffer_offset]
 
     def write_dset(self, dset_index):
+        if dset_index < 0:
+            return
+        if not self.dset_current_changed:
+            return
         dset_name = str(dset_index)
-        print("writing dset " + dset_name)
+        print("Storage: writing dataset " + dset_name)
 
         for group_name in self.data_group:
             if not dset_name in self.data_group[group_name]:
@@ -184,22 +209,25 @@ class Storage():
         return
 
     def read_dset(self, dset_index):
+        if dset_index < 0:
+            return False
+
         if self.dset_current == dset_index:
             return True
         self.write_dset(self.dset_current)
         dset_name = str(dset_index)
-        print("reading dset " + dset_name)
+        print("Storage: reading dataset " + dset_name)
 
         for group_name in self.data_group:
             if not dset_name in self.data_group[group_name]:
                 return False
 
             self.buffer_index = self.data_group[group_name][dset_name].attrs["storage_buffer_index"]
-            del self.data_group[group_name][dset_name].attrs["storage_buffer_index"]
             for i in range(self.buffer_index):
                 self.buffer[group_name][i] = self.data_group[group_name][dset_name][i]
 
         self.dset_current = dset_index
+        self.dset_current_changed = False
         self.buffer_offset = dset_index * self.buffer_size
         return True
 
