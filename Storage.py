@@ -237,7 +237,7 @@ class Storage():
         d = {}
 
         for i in range(n):
-            d["test"] = np.array([[i, i], [i, i]])
+            d["test"] = np.array([[i, i], [i, i]], dtype=np.float32)
             self.append(d)
         return
 

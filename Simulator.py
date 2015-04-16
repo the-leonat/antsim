@@ -56,17 +56,19 @@ class Simulator():
         #number of steps to simulate
         n = int(seconds / self.world.delta_time)
         for x in range(n):
+	    start = time.clock()
             self.world.tick()
 
             if x % step == 0:
                 dict = {}
                 dict["ant"] = self.world.world_objects_to_numpy()
-                dict["phero"] = self.world.phero_map.phero_map
+                dict["phero"] = self.world.phero_map.phero_map.astype(np.float16)
                 sto.append(dict)
 
                 record_count += 1
-
-            self.print_progress("#simulating frames... ", x, n)
+            
+            fps = int(1 / (time.clock() - start))
+            self.print_progress("#simulating frames... ", x, n, fps)
 
 
         print "#simulated " + str(n) + " frames."
@@ -86,9 +88,9 @@ class Simulator():
 
         print "#all done!"
 
-    def print_progress(self, label, x, max):
+    def print_progress(self, label, x, max, fps):
         perc = (x / max)
-        print "\r" + label + "{:.2%}".format(perc),
+        print "\r" + label + "{:.2%}".format(perc) + " " + str(fps) + "fps",
         sys.stdout.flush()
 
 
