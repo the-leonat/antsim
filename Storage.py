@@ -2,61 +2,28 @@ import numpy as np
 import h5py
 
 class Storage():
-    '''
-    A class to abstract away from memory access for very large continous buffers that cannot easiely be held in memory at once
-    '''
-
     def __init__(self, file_name = "record.hdf5", buffer_size = 100):
-        '''Constructor
-        filename:       the filename or path of the file to write and read
-        buffer_size:    max size of the buffer to hold before writing to disk
-        '''
         self.file = h5py.File(file_name, "a")
 
-        self.index = 0
-
-        self.dset_current = -1
-        self.dset_current_changed = False
-        self.dset_index = 0
-
-        self.buffer_size = buffer_size
         self.buffer_index = 0
-        self.buffer_offset = 0
+        self.buffer_size = buffer_size
+
         self.buffer = {}
+        self.buffer_next = None
 
-        if not "meta" in self.file:
-            # file just created
-            print("Storage: created file " + file_name)
-            self.meta_group = self.file.create_group("meta")
+        self.length = 0
+
+        if "buffer" in self.file and "keyval" in self.file:
+            print("Storage: recalling " + file_name)
+            self.length = self.file["buffer"].attrs["length"]
         else:
-            # file read, try to recall relevant fields from metadata
-            print("Storage: reading file " + file_name)
-            self.meta_group = self.file["meta"]
-            try:
-                self.index = self.get_attr("meta", "storage_index")
-            except:
-                pass
-            try:
-                self.buffer_size = self.get_attr("meta", "storage_buffer_size")
-            except:
-                pass
-            try:
-                self.dset_index = self.get_attr("meta", "storage_dset_index")
-            except:
-                pass
+            print("Storage: creating " + file_name)
+            self.file.create_group("buffer")
+            self.file.create_group("keyval")
 
-        if not "data" in self.file:
-            # file just created
-            self.data_group = self.file.create_group("data")
-        else:
-            # file read
-            self.data_group = self.file["data"]
-
-
-        for group_name in self.data_group:
-            self.buffer[group_name] = [ np.zeros((1)) ] * self.buffer_size
-
-        self.read_dset(0)
+        for name in groups:
+            self.buffer[name] = Buffer(self.file, name, self.buffer_index, groups[name], size=self.buffer_size)
+            self.buffer_next[name] = Buffer(self.file, name, self.buffer_index + 1, groups[name], size=self.buffer_size)
 
         return
 
@@ -64,180 +31,115 @@ class Storage():
         self.file.close()
 
     def finish(self):
-        '''Make sure all reamaining write operations are finished before returning.
-        '''
-
         # save relevant fields for recall
-        self.set_attr("meta", "storage_index", self.index)
-        self.set_attr("meta", "storage_buffer_size", self.buffer_size)
-        self.set_attr("meta", "storage_dset_index", self.dset_index)
+        self.file["buffer"].attrs["length"] = self.length
 
         # write remainig data to disk
-        self.write_dset(self.dset_index)
+        for name in self.buffer:
+            self.buffer[name].store()
+            self.buffer_next[name].store()
+
         return
 
-
-    def get_attr(self, group_name, attr_name):
-        '''Get attribute of h5py group to read metadata
-        attr_name:  string
-        '''
-        if group_name == "meta":
-            return self.meta_group.attrs[attr_name]
-        else:
-            return self.data_group[group_name].attrs[attr_name]
-
-    def set_attr(self, group_name, attr_name, attr_value):
-        '''Set attribute of h5py group to store metadata
-        attr_name:  string
-        attr_value: array_like
-        '''
-        if group_name == "meta":
-            self.meta_group.attrs[attr_name] = attr_value
-        else:
-            self.data_group[group_name].attrs[attr_name] = attr_value
+    def keyval_set(self, key, val):
+        self.file["keyval"].attrs[key] = val
         return
 
+    def keyval_get(self, key):
+        return self.file["keyval"].attrs[key]
 
-    def create_group(self, group_name):
-        '''Create a new h5py group
-        group_name: name of the new group
-        '''
-        if not group_name in self.data_group:
-            self.data_group.create_group(group_name)
-            self.buffer[group_name] = [ np.zeros((1)) ] * self.buffer_size
-        return
-
-    def delete_group(self, group_name):
-        '''Delete a new h5py group
-        group_name: name of the group
-        '''
-        del self.buffer[group_name]
-        del self.data_group[group_name]
-        return
-
-    def append(self, dict):
-        '''Appends to the end of the buffer at in dict specified groups. Not included groups will be zero
-        dict:   dictionary with group_name as index and nparray to write as payload
-        '''
-
-        # we may have to load from disk
-        if self.buffer_index == self.buffer_size:
-            dset_index = (self.index - 1) // self.buffer_size
-        else:
-            dset_index = self.index // self.buffer_size
-        done = self.read_dset(dset_index)
-        if not done:
+    def set(self, group, index, val):
+        if index < 0 or index > self.length:
             return False
 
-        if self.buffer_index >= self.buffer_size:
-            # write to disk
-            self.write_dset(self.dset_index)
-            self.dset_index += 1
-            self.dset_current = self.dset_index
+        
 
-            # reset buffer
-            self.buffer_index = 0
-            self.buffer_offset += self.buffer_size
-
-        for group_name in dict:
-            self.buffer[group_name][self.buffer_index] = dict[group_name]
-
-        self.buffer_index += 1
-        self.index += 1
-
-        self.dset_current_changed = True
-        return True
-
-    def set(self, i, dict):
-        '''Sets index i of the continous buffer to given object. This can involve a trip to the hard drive.
-        i:      the index in the continous buffer
-        dict:   dictionary with group_name as index and nparray to write as payload
-        '''
-
-        # i out of bounds
-        if i < 0 or i > self.index:
-            return False
-
-        # just append, were at the current position anyway
-        if i == self.index:
-            return self.append(dict)
-
-        # we may have to load from disk
-        done = self.read_dset(i // self.buffer_size)
-        if not done:
-            return False
-
-        for group_name in dict:
-            self.buffer[group_name][i - self.buffer_offset] = dict[group_name]
-            self.dset_current_changed = True
-        return True
-
-    def get(self, group_name, i):
-        '''Gets object at index i of the continous buffer. This can invole a trip to the hard drive.
-        i:      the index in the continous buffer
-        '''
-        # i out of bounds
-        if i < 0 or i > self.index - 1:
+    def get(self, group, index):
+        if index < 0 or index > self.length:
             return None
 
-        # we may have to load from disk
-        done = self.read_dset(i // self.buffer_size)
-        if not done:
-            return None
-        return self.buffer[group_name][i - self.buffer_offset]
+        buffer_index = index // self.buffer_size
 
-    def write_dset(self, dset_index):
-        if dset_index < 0:
-            return
-        if not self.dset_current_changed:
-            return
-        dset_name = str(dset_index)
-        print("Storage: writing dataset " + dset_name)
-
-        for group_name in self.data_group:
-            if not dset_name in self.data_group[group_name]:
-                # assuming all entries of one group have the same shape
-                dset_shape = (self.buffer_size,) + self.buffer[group_name][0].shape
-                # new dataset with first dimensions length of buffer to write
-                dset = self.data_group[group_name].create_dataset(dset_name, dset_shape, chunks=True, compression="lzf")
+        if buffer_index != self.buffer_index:
+            # load correct buffer
+            if buffer_index == self.buffer_index + 1 and self.buffer_next != None:
+                self.buffer = self.buffer_next
+                self.buffer_index = buffer_index
+                for group in self.buffer:
+                    self.buffer_next[group] = Buffer(self.file, group, self.buffer_index + 1, self.shape[group], size=self.buffer_size)
             else:
-                dset = self.data_group[group_name][dset_name]
 
-            for i in range(self.buffer_index):
-                dset[i] = self.buffer[group_name][i]
-            dset.attrs["storage_buffer_index"] = self.buffer_index
+
+
+        return self.buffer[group].get(index - (buffer_index * self.buffer_size))
+
+
+
+class Buffer():
+    def __init__(self, file, name, id, shape, size=100):
+        self.id = str(id)
+        self.name = name
+        self.shape = shape
+        self.size = size
+
+        if self.id in file["buffer"][self.name]:
+            self.dset = file["buffer"][self.name][self.id]
+
+            self.recall()
+        else:
+            self.dset = file["buffer"][self.name].create_dataset(self.id, self.shape, chunks=True, compression="lzf")
+
+            self.index = 0
+            self.buffer = []
+
         return
 
-    def read_dset(self, dset_index):
-        if dset_index < 0:
-            return False
-
-        if self.dset_current == dset_index:
+    def recall(self):
+        if self.buffered:
             return True
-        self.write_dset(self.dset_current)
-        dset_name = str(dset_index)
-        print("Storage: reading dataset " + dset_name)
 
-        for group_name in self.data_group:
-            if not dset_name in self.data_group[group_name]:
-                return False
+        print("Storage: recalling [" + self.name + "|" + self.id + "]")
 
-            self.buffer_index = self.data_group[group_name][dset_name].attrs["storage_buffer_index"]
-            for i in range(self.buffer_index):
-                self.buffer[group_name][i] = self.data_group[group_name][dset_name][i]
+        self.index = self.dset.attrs["index"]
+        self.size = self.dset.attrs["size"]
+        self.buffer = self.dset
+        self.buffered = True
 
-        self.dset_current = dset_index
-        self.dset_current_changed = False
-        self.buffer_offset = dset_index * self.buffer_size
+        return True
+
+    def store(self):
+        if not self.buffered:
+            return True
+
+        print("Storage: storing [" + self.name + "|" + self.id + "]")
+
+        self.dset.attrs["index"] = self.index
+        self.dset.attrs["size"] = self.size
+        self.dset = self.buffer
+        self.buffer = []
+        self.buffered = False
+
         return True
 
 
-    def test(self, n):
-        self.create_group("test");
-        d = {}
+    def set(self, index, val):
+        if index < 0 or index > self.size:
+            return False
 
-        for i in range(n):
-            d["test"] = np.array([[i, i], [i, i]])
-            self.append(d)
-        return
+        if self.shape != val.shape:
+            return False
 
+        if not self.buffered:
+            return False
+
+        self.buffer[index] = val
+        return True
+
+    def get(self, index):
+        if index < 0 or index > self.size:
+            return None
+
+        if not self.buffered:
+            return None
+
+        return self.buffer[index]
