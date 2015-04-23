@@ -67,7 +67,7 @@ class MainView(pyglet.window.Window):
         time_passed = self.delta_time * self.current_frame * self.record_step
 
         self.label_time_passed.text = "{:.2f}".format(time_passed) + "s"
-        self.label_current_frame.text = "f_num:" + str(self.current_frame + 1) + "/" + str(self.storage.index)
+        self.label_current_frame.text = "f_num:" + str(self.current_frame + 1) + "/" + str(self.storage.length)
 
         #get the right frame of data
         ant_numpy_list = self.storage.get("ant", self.current_frame)
@@ -142,7 +142,7 @@ class MainView(pyglet.window.Window):
             if self.state_play:
                 self.state_play = False
             else:
-                if self.current_frame == self.storage.index - 1:
+                if self.current_frame == self.storage.length - 1:
                     self.current_frame = 0
                 self.state_play = True
 
@@ -188,18 +188,18 @@ class MainView(pyglet.window.Window):
 
     #here work needs to be done
     def next_frame(self, howmany = 1):
-        if self.current_frame + howmany > self.storage.index - howmany:
+        if self.current_frame + howmany > self.storage.length - howmany:
             self.current_frame = 0
         else:
             #stop at border
-            if self.current_frame == self.storage.index - 2:
+            if self.current_frame == self.storage.length - 2:
                 self.state_navigation = 0
 
             self.current_frame += howmany
 
     def previous_frame(self):
         if self.current_frame - 1 < 0:
-            self.current_frame = self.storage.index - 1
+            self.current_frame = self.storage.length - 1
         else:
             #stop at border
             if self.current_frame == 1:
@@ -215,10 +215,10 @@ class MainView(pyglet.window.Window):
             print("Viewer Version != Simulator Version: " + str(self.VERSION))
             return
 
-        self.delta_time = self.storage.get_attr("meta", "world_delta_time")
-        self.number_of_frames = self.storage.get_attr("meta", "frame_count")
-        self.dimensions = self.storage.get_attr("meta", "world_dimensions")
-        self.record_step = self.storage.get_attr("meta", "record_step")
+        self.delta_time = self.storage.keyval_get("world_delta_time")
+        self.number_of_frames = self.storage.keyval_get("frame_count")
+        self.dimensions = self.storage.keyval_get("world_dimensions")
+        self.record_step = self.storage.keyval_get("record_step")
 
         #reset framecounter to zero
         self.current_frame = 0
@@ -237,7 +237,7 @@ class MainView(pyglet.window.Window):
 
         if not self.state_play: return
 
-        if self.current_frame + 1 < self.storage.index:
+        if self.current_frame + 1 < self.storage.length:
             self.next_frame()
         else:
             self.state_play = False

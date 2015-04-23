@@ -1,45 +1,44 @@
 import numpy as np
 import h5py
 
-class Storage():
-    def __init__(self, file_name = "record.hdf5", buffer_size = 100):
-        self.file = h5py.File(file_name, "a")
+def test(n):
+    groups = {}
+    groups["test"] = (2, 2)
+    s = Storage(groups, file_name="test.hdf5")
 
-        self.buffer_index = 0
+    for i in range(n):
+        s.set("test", i, np.array([[i, i],[i, i]]))
+
+    return s
+
+class Storage():
+    def __init__(self, groups, file_name = "record.hdf5", buffer_size = 100):
+        self.file = h5py.File(file_name, "a")
+        self.groups = groups
+
         self.buffer_size = buffer_size
 
-        self.buffer = {}
+        self.current_id = 0
+        self.buffer = None
         self.buffer_next = None
+        self.buffer_prev = None
 
         self.length = 0
 
         if "buffer" in self.file and "keyval" in self.file:
             print("Storage: recalling " + file_name)
             self.length = self.file["buffer"].attrs["length"]
+            self.buffer_size = self.file["buffer"].attrs["buffer_size"]
         else:
             print("Storage: creating " + file_name)
             self.file.create_group("buffer")
             self.file.create_group("keyval")
 
-        for name in groups:
-            self.buffer[name] = Buffer(self.file, name, self.buffer_index, groups[name], size=self.buffer_size)
-            self.buffer_next[name] = Buffer(self.file, name, self.buffer_index + 1, groups[name], size=self.buffer_size)
-
+        self.recall(self.current_id)
         return
 
     def __del__(self):
         self.file.close()
-
-    def finish(self):
-        # save relevant fields for recall
-        self.file["buffer"].attrs["length"] = self.length
-
-        # write remainig data to disk
-        for name in self.buffer:
-            self.buffer[name].store()
-            self.buffer_next[name].store()
-
-        return
 
     def keyval_set(self, key, val):
         self.file["keyval"].attrs[key] = val
@@ -52,27 +51,76 @@ class Storage():
         if index < 0 or index > self.length:
             return False
 
+        id = index // self.buffer_size
+        self.recall(id)
+
+        self.buffer[group].set(index - (id * self.buffer_size), val)
+        return True
         
 
     def get(self, group, index):
         if index < 0 or index > self.length:
             return None
 
-        buffer_index = index // self.buffer_size
-
-        if buffer_index != self.buffer_index:
-            # load correct buffer
-            if buffer_index == self.buffer_index + 1 and self.buffer_next != None:
-                self.buffer = self.buffer_next
-                self.buffer_index = buffer_index
-                for group in self.buffer:
-                    self.buffer_next[group] = Buffer(self.file, group, self.buffer_index + 1, self.shape[group], size=self.buffer_size)
-            else:
-
-
+        id = index // self.buffer_size
+        self.recall(id)
 
         return self.buffer[group].get(index - (buffer_index * self.buffer_size))
 
+
+    def recall(self, id):
+        if id == self.current_id:
+            return True
+
+        if id < 0 or id > self.length:
+            return False
+
+        if id == self.current_id + 1:
+            self.buffer_prev.store()
+            self.buffer_prev = self.buffer
+            self.buffer = self.buffer_next
+            self.buffer_next = None
+        elif id == self.current_id - 1:
+            self.buffer_next.store()
+            self.buffer_next = self.buffer
+            self.buffer = self.buffer_prev
+            self.buffer_prev = None
+        else:
+            self.buffer.store()
+            self.buffer = None
+            self.buffer_next.store()
+            self.buffer_next = None
+            self.buffer_prev.store()
+            self.buffer_prev = None
+
+        self.current_id = id
+
+        if self.buffer_prev == None and id - 1 >= 0:
+            for name in self.groups:
+                self.buffer_prev[name] = Buffer(self.file, name, id - 1, self.groups[name], size=self.buffer_size)
+        if self.buffer == None and id >= 0:
+            for name in self.groups:
+                self.buffer[name] = Buffer(self.file, name, id, self.groups[name], size=self.buffer_size)
+        if self.buffer_next == None and id + 1 >= 0:
+            for name in self.groups:
+                self.buffer_next[name] = Buffer(self.file, name, id + 1, self.groups[name], size=self.buffer_size)
+
+        return False
+
+    def store(self):
+        # save relevant fields for recall
+        self.file["buffer"].attrs["length"] = self.length
+        self.file["buffer"].attrs["buffer_size"] = self.buffer_size
+
+        for name in self.groups:
+            self.file["buffer"].attrs["group_" + name + "_shape"] = self.groups[name]
+
+        # write remainig data to disk
+        self.buffer.store()
+        self.buffer_next.store()
+        self.buffer_prev.store()
+
+        return
 
 
 class Buffer():
