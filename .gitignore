@@ -1,3 +1,4 @@
 *.pyc
 record*
 profile*.txt
+*.sublime-workspace

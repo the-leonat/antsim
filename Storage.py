@@ -18,10 +18,10 @@ class Storage():
 
         self.buffer_size = buffer_size
 
-        self.current_id = 0
-        self.buffer = None
-        self.buffer_next = None
-        self.buffer_prev = None
+        self.current_id = -1
+        self.buffer = {}
+        self.buffer_next = {}
+        self.buffer_prev = {}
 
         self.length = 0
 
@@ -34,7 +34,10 @@ class Storage():
             self.file.create_group("buffer")
             self.file.create_group("keyval")
 
-        self.recall(self.current_id)
+            for name in self.groups:
+                self.file["buffer"].create_group(name)
+
+        self.recall(0)
         return
 
     def __del__(self):
@@ -54,91 +57,113 @@ class Storage():
         id = index // self.buffer_size
         self.recall(id)
 
-        self.buffer[group].set(index - (id * self.buffer_size), val)
-        return True
+        done = self.buffer[group].set(index - (id * self.buffer_size), val)
+
+        if done and index == self.length:
+            self.length += 1
+
+        return done
         
 
     def get(self, group, index):
-        if index < 0 or index > self.length:
+        if index < 0 or index >= self.length:
             return None
 
         id = index // self.buffer_size
         self.recall(id)
 
-        return self.buffer[group].get(index - (buffer_index * self.buffer_size))
+        return self.buffer[group].get(index - (id * self.buffer_size))
 
 
     def recall(self, id):
         if id == self.current_id:
             return True
 
-        if id < 0 or id > self.length:
-            return False
-
         if id == self.current_id + 1:
-            self.buffer_prev.store()
+            if self.buffer_prev:
+                for name in self.groups:
+                    self.buffer_prev[name].store()
             self.buffer_prev = self.buffer
             self.buffer = self.buffer_next
-            self.buffer_next = None
+            self.buffer_next = {}
         elif id == self.current_id - 1:
-            self.buffer_next.store()
+            if self.buffer_next:
+                for name in self.groups:
+                    self.buffer_next[name].store()
             self.buffer_next = self.buffer
             self.buffer = self.buffer_prev
-            self.buffer_prev = None
+            self.buffer_prev = {}
         else:
-            self.buffer.store()
-            self.buffer = None
-            self.buffer_next.store()
-            self.buffer_next = None
-            self.buffer_prev.store()
-            self.buffer_prev = None
+            if self.buffer_prev:
+                for name in self.groups:
+                    self.buffer_prev[name].store()
+            self.buffer_prev = {}
+            if self.buffer:
+                for name in self.groups:
+                    self.buffer[name].store()
+            self.buffer = {}
+            if self.buffer_next:
+                for name in self.groups:
+                    self.buffer_next[name].store()
+            self.buffer_next = {}
 
         self.current_id = id
 
-        if self.buffer_prev == None and id - 1 >= 0:
+        if not self.buffer_prev and id - 1 >= 0:
             for name in self.groups:
-                self.buffer_prev[name] = Buffer(self.file, name, id - 1, self.groups[name], size=self.buffer_size)
-        if self.buffer == None and id >= 0:
+                self.buffer_prev[name] = Buffer(self.file, name, id - 1, self.groups[name], self.buffer_size)
+        if not self.buffer and id >= 0:
             for name in self.groups:
-                self.buffer[name] = Buffer(self.file, name, id, self.groups[name], size=self.buffer_size)
-        if self.buffer_next == None and id + 1 >= 0:
+                self.buffer[name] = Buffer(self.file, name, id, self.groups[name], self.buffer_size)
+        if not self.buffer_next and id + 1 >= 0:
             for name in self.groups:
-                self.buffer_next[name] = Buffer(self.file, name, id + 1, self.groups[name], size=self.buffer_size)
+                self.buffer_next[name] = Buffer(self.file, name, id + 1, self.groups[name], self.buffer_size)
 
-        return False
+        return True
 
     def store(self):
         # save relevant fields for recall
         self.file["buffer"].attrs["length"] = self.length
         self.file["buffer"].attrs["buffer_size"] = self.buffer_size
 
-        for name in self.groups:
-            self.file["buffer"].attrs["group_" + name + "_shape"] = self.groups[name]
+        self.file["buffer"].attrs["groups"] = self.groups.keys()
+        self.file["buffer"].attrs["shapes"] = self.groups.values()
 
         # write remainig data to disk
-        self.buffer.store()
-        self.buffer_next.store()
-        self.buffer_prev.store()
+        if self.buffer_prev != None:
+            self.buffer_prev.store()
+        if self.buffer != None:
+            self.buffer.store()
+        if self.buffer_next != None:
+            self.buffer_next.store()
 
         return
 
 
 class Buffer():
-    def __init__(self, file, name, id, shape, size=100):
+    def __init__(self, file, name, id, shape, size):
         self.id = str(id)
         self.name = name
         self.shape = shape
         self.size = size
+
+        self.buffer = None
+        self.buffered = False
+        self.changed = False
 
         if self.id in file["buffer"][self.name]:
             self.dset = file["buffer"][self.name][self.id]
 
             self.recall()
         else:
-            self.dset = file["buffer"][self.name].create_dataset(self.id, self.shape, chunks=True, compression="lzf")
+            self.dset = file["buffer"][self.name].create_dataset(self.id, (self.size,) + self.shape, chunks=True, compression="lzf")
+            self.buffered = True
 
+            self.buffer = [ np.array([-1]) ] * self.size
             self.index = 0
-            self.buffer = []
+
+            self.buffered = True
+            self.changed = False
 
         return
 
@@ -150,8 +175,13 @@ class Buffer():
 
         self.index = self.dset.attrs["index"]
         self.size = self.dset.attrs["size"]
-        self.buffer = self.dset
+
+        if not self.buffer:
+            self.buffer = [ np.array([-1]) ] * self.size
+
+        self.buffer[0:self.index] = self.dset
         self.buffered = True
+        self.changed = False
 
         return True
 
@@ -163,15 +193,18 @@ class Buffer():
 
         self.dset.attrs["index"] = self.index
         self.dset.attrs["size"] = self.size
-        self.dset = self.buffer
-        self.buffer = []
+
+        if self.changed:
+            self.dset = self.buffer[0:self.index]
+        self.buffer = None
         self.buffered = False
+        self.changed = False
 
         return True
 
 
     def set(self, index, val):
-        if index < 0 or index > self.size:
+        if index < 0 or index > self.size or index > self.index + 1:
             return False
 
         if self.shape != val.shape:
@@ -181,10 +214,15 @@ class Buffer():
             return False
 
         self.buffer[index] = val
+        self.changed = True
+
+        if index == self.index + 1:
+            self.index += 1
+
         return True
 
     def get(self, index):
-        if index < 0 or index > self.size:
+        if index < 0 or index > self.index:
             return None
 
         if not self.buffered:
