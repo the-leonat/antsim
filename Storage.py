@@ -2,9 +2,10 @@ import numpy as np
 import h5py
 
 def test(n):
-    groups = {}
-    groups["test"] = (2, 2)
-    s = Storage(groups, file_name="test.hdf5")
+    groups = ["test"]
+    shapes = [(2, 2)]
+    dtypes = [np.int]
+    s = Storage(groups, shapes, dtypes, file_name="test.hdf5")
 
     for i in range(n):
         s.set("test", i, np.array([[i, i],[i, i]]))
@@ -12,9 +13,11 @@ def test(n):
     return s
 
 class Storage():
-    def __init__(self, groups, file_name = "record.hdf5", buffer_size = 100):
+    def __init__(self, groups = [], shapes = [], dtypes = [], file_name = "record.hdf5", buffer_size = 100):
         self.file = h5py.File(file_name, "a")
         self.groups = groups
+        self.shapes = shapes
+        self.dtypes = dtypes
 
         self.buffer_size = buffer_size
 
@@ -27,8 +30,14 @@ class Storage():
 
         if "buffer" in self.file and "keyval" in self.file:
             print("Storage: recalling " + file_name)
+
             self.length = self.file["buffer"].attrs["length"]
             self.buffer_size = self.file["buffer"].attrs["buffer_size"]
+
+            self.groups = self.file["buffer"].attrs["groups"]
+
+            self.shapes = [None] * len(self.groups)
+            self.dtypes = [None] * len(self.groups)
         else:
             print("Storage: creating " + file_name)
             self.file.create_group("buffer")
@@ -110,14 +119,14 @@ class Storage():
         self.current_id = id
 
         if not self.buffer_prev and id - 1 >= 0:
-            for name in self.groups:
-                self.buffer_prev[name] = Buffer(self.file, name, id - 1, self.groups[name], self.buffer_size)
+            for i in range(len(self.groups)):
+                self.buffer_prev[self.groups[i]] = Buffer(self.file, self.groups[i], id - 1, self.shapes[i], self.dtypes[i], self.buffer_size)
         if not self.buffer and id >= 0:
-            for name in self.groups:
-                self.buffer[name] = Buffer(self.file, name, id, self.groups[name], self.buffer_size)
+            for j in range(len(self.groups)):
+                self.buffer[self.groups[j]] = Buffer(self.file, self.groups[j], id , self.shapes[j], self.dtypes[j], self.buffer_size)
         if not self.buffer_next and id + 1 >= 0:
-            for name in self.groups:
-                self.buffer_next[name] = Buffer(self.file, name, id + 1, self.groups[name], self.buffer_size)
+            for k in range(len(self.groups)):
+                self.buffer_next[self.groups[k]] = Buffer(self.file, self.groups[k], id + 1, self.shapes[k], self.dtypes[k], self.buffer_size)
 
         return True
 
@@ -126,25 +135,28 @@ class Storage():
         self.file["buffer"].attrs["length"] = self.length
         self.file["buffer"].attrs["buffer_size"] = self.buffer_size
 
-        self.file["buffer"].attrs["groups"] = self.groups.keys()
-        self.file["buffer"].attrs["shapes"] = self.groups.values()
+        self.file["buffer"].attrs["groups"] = self.groups
 
         # write remainig data to disk
-        if self.buffer_prev != None:
-            self.buffer_prev.store()
-        if self.buffer != None:
-            self.buffer.store()
-        if self.buffer_next != None:
-            self.buffer_next.store()
+        if self.buffer_prev:
+            for name in self.groups:
+                self.buffer_prev[name].store()
+        if self.buffer:
+            for name in self.groups:
+                self.buffer[name].store()
+        if self.buffer_next:
+            for name in self.groups:
+                self.buffer_next[name].store()
 
         return
 
 
 class Buffer():
-    def __init__(self, file, name, id, shape, size):
+    def __init__(self, file, name, id, shape, dtype, size):
         self.id = str(id)
         self.name = name
         self.shape = shape
+        self.dtype = dtype
         self.size = size
 
         self.buffer = None
@@ -155,8 +167,10 @@ class Buffer():
             self.dset = file["buffer"][self.name][self.id]
 
             self.recall()
+            self.shape = self.buffer[0].shape
+            self.dtype = self.buffer[0].dtype
         else:
-            self.dset = file["buffer"][self.name].create_dataset(self.id, (self.size,) + self.shape, chunks=True, compression="lzf")
+            self.dset = file["buffer"][self.name].create_dataset(self.id, (self.size,) + self.shape, dtype=self.dtype, chunks=True, compression="lzf")
             self.buffered = True
 
             self.buffer = [ np.array([-1]) ] * self.size
@@ -195,7 +209,8 @@ class Buffer():
         self.dset.attrs["size"] = self.size
 
         if self.changed:
-            self.dset = self.buffer[0:self.index]
+            for i in range(self.index + 1):
+                self.dset[i] = self.buffer[i]
         self.buffer = None
         self.buffered = False
         self.changed = False
