@@ -211,7 +211,7 @@ class MainView(pyglet.window.Window):
     def load_file(self, filename):
         self.storage = Storage(filename, 100)
 
-        if self.storage.get_attr("meta", "version") != self.VERSION:
+        if self.storage.keyval_get("version") != self.VERSION:
             print("Viewer Version != Simulator Version: " + str(self.VERSION))
             return
 
