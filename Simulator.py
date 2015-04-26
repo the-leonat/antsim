@@ -46,7 +46,7 @@ class Simulator():
         # new storage object
         groups = ["ant", "phero"]
         shapes = [(2, len(self.world.world_objects), 2), self.world.phero_map.phero_map.shape]
-        dtypes = [np.float, self.world.phero_map.phero_map.dtype]
+        dtypes = [np.float, np.float32]
         sto = Storage(groups, shapes, dtypes, filename, 100)
 
         #loop increment for recorded steps
