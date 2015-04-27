@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+import threading
 
 def test(n):
     groups = ["test"]
@@ -150,6 +151,8 @@ class Storage():
 
 class Buffer():
     def __init__(self, file, name, id, size, shape, dtype):
+        self.thread = None
+
         self.id = id
         self.name = name
         self.shape = shape
@@ -175,15 +178,13 @@ class Buffer():
         if self.buffer:
             return True
 
-        print("Storage: recalling " + self.name + "[" + str(self.id) + ":" + str(self.id + self.length) + "]")
+        if self.length != 0:
+            print("Storage: recalling " + self.name + "[" + str(self.id) + ":" + str(self.id + self.length) + "]")
 
-        if not self.buffer:
-            self.buffer = [ np.array([-1]) ] * self.size
-
-        self.length = min(self.size, max(0, self.dset.shape[0] - self.id))
-        print(self.length)
-        self.buffer[0:self.length] = self.dset[self.id:self.id + self.length]
-        self.changed = False
+        if self.thread:
+            self.thread.join()
+        self.thread = BufferReader(self)
+        self.thread.start()
 
         return True
 
@@ -194,16 +195,10 @@ class Buffer():
         print("Storage: storing " + self.name + "[" + str(self.id) + ":" + str(self.id + self.length) + "]")
 
         if self.changed:
-            super_length = self.dset.shape[0]
-
-            if super_length < self.id + self.length:
-                self.dset.resize(self.id + self.length, axis=0)
-            
-            self.dset[self.id:self.id + self.length] = self.buffer[0:self.length]
-        
-        # cleanup, free memory
-        self.buffer = None
-        self.changed = False
+            if self.thread:
+                self.thread.join()
+            self.thread = BufferWriter(self)
+            self.thread.start()
 
         return True
 
@@ -217,6 +212,10 @@ class Buffer():
 
         if not self.buffer:
             return False
+
+        if self.thread:
+            self.thread.join()
+            self.thread = None
 
         self.buffer[index] = val
         self.changed = True
@@ -233,4 +232,48 @@ class Buffer():
         if not self.buffer:
             return None
 
+        if self.thread:
+            self.thread.join()
+            self.thread = None
+
         return self.buffer[index]
+
+
+class BufferWriter(threading.Thread):
+    lock = threading.Lock()
+
+    def __init__(self, buffer):
+        threading.Thread.__init__(self)
+        self.buffer = buffer
+        return
+
+    def run(self):
+        BufferWriter.lock.acquire()
+
+        super_length = self.buffer.dset.shape[0]
+        if super_length < self.buffer.id + self.buffer.length:
+            self.buffer.dset.resize(self.buffer.id + self.buffer.length, axis=0)
+            
+        self.buffer.dset[self.buffer.id:self.buffer.id + self.buffer.length] = self.buffer.buffer[0:self.buffer.length]
+
+        self.buffer.buffer = None
+        self.buffer.changed = False
+
+        BufferWriter.lock.release()
+        return
+
+class BufferReader(threading.Thread):
+    def __init__(self, buffer):
+        threading.Thread.__init__(self)
+        self.buffer = buffer
+        return
+
+    def run(self):
+        if not self.buffer.buffer:
+            self.buffer.buffer = [ np.array([-1]) ] * self.buffer.size
+
+        self.buffer.length = min(self.buffer.size, max(0, self.buffer.dset.shape[0] - self.buffer.id))
+        self.buffer.buffer[0:self.buffer.length] = self.buffer.dset[self.buffer.id:self.buffer.id + self.buffer.length]
+        self.buffer.changed = False
+
+        return
