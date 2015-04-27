@@ -181,10 +181,12 @@ class Buffer():
         if self.length != 0:
             print("Storage: recalling " + self.name + "[" + str(self.id) + ":" + str(self.id + self.length) + "]")
 
-        if self.thread:
+        '''if self.thread:
             self.thread.join()
         self.thread = BufferReader(self)
-        self.thread.start()
+        self.thread.start()'''
+        reader = BufferReader(self)
+        reader.run()
 
         return True
 
@@ -192,13 +194,14 @@ class Buffer():
         if not self.buffer:
             return True
 
-        print("Storage: storing " + self.name + "[" + str(self.id) + ":" + str(self.id + self.length) + "]")
-
         if self.changed:
-            if self.thread:
+            print("Storage: storing " + self.name + "[" + str(self.id) + ":" + str(self.id + self.length) + "]")
+            '''if self.thread:
                 self.thread.join()
             self.thread = BufferWriter(self)
-            self.thread.start()
+            self.thread.start()'''
+            writer = BufferWriter(self)
+            writer.run()
 
         return True
 
