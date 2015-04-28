@@ -15,9 +15,8 @@ class PheromoneMap():
         self.phero_map = np.zeros(tuple(np.array(config["world_dimension"]) * resolution), dtype=np.float32)
         self.phero_changes = []
 
-        #self.diffusion_matrix = np.array([[0.0,0.2,0.0],[0.2,0.0,0.2],[0.0,0.2,0.0]])
-        #self.diffusion_matrix = np.array([[0.0625,0.0625,0.0625],[0.0625,0.5,0.0625],[0.0625,0.0625,0.0625]], dtype=np.float32)
-        self.diffusion_matrix = np.array([[0.1,0.1,0.1],[0.1,0.2,0.1],[0.1,0.1,0.1]], dtype=np.float32)
+        #self.diffusion_matrix = np.array([[0.1,0.1,0.1],[0.1,0.2,0.1],[0.1,0.1,0.1]], dtype=np.float32)
+        self.diffusion_matrix = np.array([[0.0999,0.0999,0.0999],[0.0999,0.197,0.0999],[0.0999,0.0999,0.0999]], dtype=np.float32)
 
     def to_dict(self):
         d = {}
@@ -27,14 +26,16 @@ class PheromoneMap():
 
     def tick(self, delta):
         # apply all changes enqued during last round
-        amount_sum = 0
+        #amount_sum = 0
         for i in self.phero_changes:
-            amount_sum += i[2]
+            #amount_sum += i[2]
             self.phero_map[i[0], i[1]] = i[2]
         self.phero_changes = []
 
+        print(np.sum(self.phero_map))
+
         #self.phero_map -= (amount_sum / (self.phero_map.shape[0] * self.phero_map.shape[1]))
-        self.phero_map -= (np.sum(self.phero_map) - self.max_concentration) / (self.phero_map.shape[0] * self.phero_map.shape[1])
+        #self.phero_map -= (np.sum(self.phero_map) - self.max_concentration) / (self.phero_map.shape[0] * self.phero_map.shape[1])
 
         # convolve to blur pheromone
         #self.phero_map = scipy.signal.fftconvolve(self.phero_map, self.diffusion_matrix, mode="same")
