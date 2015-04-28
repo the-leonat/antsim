@@ -9,6 +9,7 @@ ant:
   max_speed: 50
   min_speed: 10
   max_turn_angle: 25
+  acceleration: 50
 
   #proportions
   length: 10

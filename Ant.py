@@ -16,6 +16,7 @@ class Ant(WorldObject):
     max_speed = config["ant"]["max_speed"]
     min_speed = config["ant"]["min_speed"]
     max_turn_angle = config["ant"]["max_turn_angle"]
+    acceleration = config["ant"]["acceleration"]
 
     length = config["ant"]["length"]
     center_radius = config["ant"]["center_radius"]
@@ -143,6 +144,18 @@ class Ant(WorldObject):
         self.position = pos - shift
         return circuited
 
+    def speed_up(self, delta):
+        if self.speed + self.acceleration * delta <= self.max_speed:
+            self.speed += self.acceleration * delta
+        else:
+            self.speed = self.max_speed 
+
+    def speed_down(self, delta):
+        if self.speed - self.acceleration * delta >= self.min_speed:
+            self.speed -= self.acceleration * delta
+        else:
+            self.speed = self.min_speed
+
     def tick(self, delta):
         '''
         put here all the movement logic
@@ -157,8 +170,10 @@ class Ant(WorldObject):
         evaded = self.evade_objects(delta)
         if not evaded:
             trailed = self.trail_pheromone()
+            self.speed_up(delta)
+        else:
+            self.speed_down(delta)
 
-        self.speed = Ant.max_speed if not evaded else Ant.min_speed
         self.position = self.position + ( self.direction * self.speed * self.world.delta_time)
 
         #wrap around the edges of the world
