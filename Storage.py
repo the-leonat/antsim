@@ -1,243 +1,282 @@
 import numpy as np
 import h5py
+import threading
+
+def test(n):
+    groups = ["test"]
+    shapes = [(2, 2)]
+    dtypes = [np.int]
+    s = Storage("test.hdf5", groups, shapes, dtypes, buffer_size=50)
+
+    for i in range(n):
+        s.set("test", i, np.array([[i, i],[i, i]]))
+
+    return s
 
 class Storage():
-    '''
-    A class to abstract away from memory access for very large continous buffers that cannot easiely be held in memory at once
-    '''
-
-    def __init__(self, file_name = "record.hdf5", buffer_size = 100):
-        '''Constructor
-        filename:       the filename or path of the file to write and read
-        buffer_size:    max size of the buffer to hold before writing to disk
-        '''
+    def __init__(self, file_name, groups = [], shapes = [], dtypes = [], buffer_size = 100, compression = "lzf"):
         self.file = h5py.File(file_name, "a")
-
-        self.index = 0
-
-        self.dset_current = -1
-        self.dset_current_changed = False
-        self.dset_index = 0
+        self.groups = groups
+        self.shapes = shapes
+        self.dtypes = dtypes
 
         self.buffer_size = buffer_size
-        self.buffer_index = 0
-        self.buffer_offset = 0
+
+        self.current_id = -1
         self.buffer = {}
+        self.buffer_next = {}
+        self.buffer_prev = {}
 
-        if not "meta" in self.file:
-            # file just created
-            print("Storage: created file " + file_name)
-            self.meta_group = self.file.create_group("meta")
+        self.length = 0
+
+        if "buffer" in self.file and "keyval" in self.file:
+            print("Storage: recalling " + file_name)
+
+            self.length = self.file["buffer"].attrs["length"]
+
+            self.groups = self.file["buffer"].attrs["groups"]
+            self.shapes = [None] * len(self.groups)
+            self.dtypes = [None] * len(self.groups)
         else:
-            # file read, try to recall relevant fields from metadata
-            print("Storage: reading file " + file_name)
-            self.meta_group = self.file["meta"]
-            try:
-                self.index = self.get_attr("meta", "storage_index")
-            except:
-                pass
-            try:
-                self.buffer_size = self.get_attr("meta", "storage_buffer_size")
-            except:
-                pass
-            try:
-                self.dset_index = self.get_attr("meta", "storage_dset_index")
-            except:
-                pass
+            print("Storage: creating " + file_name)
+            self.file.create_group("buffer")
+            self.file.create_group("keyval")
 
-        if not "data" in self.file:
-            # file just created
-            self.data_group = self.file.create_group("data")
-        else:
-            # file read
-            self.data_group = self.file["data"]
+            for i in range(len(self.groups)):
+                maxshape = (None,) * (len(self.shapes[i]) + 1)
+                self.file["buffer"].create_dataset(self.groups[i], (0,) + self.shapes[i], self.dtypes[i], chunks=True, maxshape=maxshape, compression = compression)
 
-
-        for group_name in self.data_group:
-            self.buffer[group_name] = [ np.zeros((1)) ] * self.buffer_size
-
-        self.read_dset(0)
-
+        self.recall(0)
         return
 
     def __del__(self):
         self.file.close()
 
-    def finish(self):
-        '''Make sure all reamaining write operations are finished before returning.
-        '''
+    def keyval_set(self, key, val):
+        self.file["keyval"].attrs[key] = val
+        return
 
+    def keyval_get(self, key):
+        return self.file["keyval"].attrs[key]
+
+    def set(self, group, index, val):
+        if index < 0 or index > self.length:
+            return False
+
+        id = (index // self.buffer_size) * self.buffer_size
+        self.recall(id)
+
+        done = self.buffer[group].set(index - id, val)
+
+        if done and index == self.length:
+            self.length += 1
+
+        return done
+        
+
+    def get(self, group, index):
+        if index < 0 or index >= self.length:
+            return None
+
+        id = (index // self.buffer_size) * self.buffer_size
+        self.recall(id)
+
+        return self.buffer[group].get(index - id)
+
+
+    def recall(self, id):
+        if id == self.current_id:
+            return True
+
+        if id == self.current_id + self.buffer_size:
+            if self.buffer_prev:
+                for name in self.groups:
+                    self.buffer_prev[name].store()
+            self.buffer_prev = self.buffer
+            self.buffer = self.buffer_next
+            self.buffer_next = {}
+        elif id == self.current_id - self.buffer_size:
+            if self.buffer_next:
+                for name in self.groups:
+                    self.buffer_next[name].store()
+            self.buffer_next = self.buffer
+            self.buffer = self.buffer_prev
+            self.buffer_prev = {}
+        else:
+            if self.buffer_prev:
+                for name in self.groups:
+                    self.buffer_prev[name].store()
+            self.buffer_prev = {}
+            if self.buffer:
+                for name in self.groups:
+                    self.buffer[name].store()
+            self.buffer = {}
+            if self.buffer_next:
+                for name in self.groups:
+                    self.buffer_next[name].store()
+            self.buffer_next = {}
+
+        self.current_id = id
+
+        if not self.buffer_prev and id - self.buffer_size >= 0:
+            for i in range(len(self.groups)):
+                self.buffer_prev[self.groups[i]] = Buffer(self.file, self.groups[i], id - self.buffer_size, self.buffer_size, self.shapes[i], self.dtypes[i])
+        if not self.buffer and id >= 0:
+            for j in range(len(self.groups)):
+                self.buffer[self.groups[j]] = Buffer(self.file, self.groups[j], id, self.buffer_size, self.shapes[j], self.dtypes[j])
+        if not self.buffer_next and id + self.buffer_size >= 0:
+            for k in range(len(self.groups)):
+                self.buffer_next[self.groups[k]] = Buffer(self.file, self.groups[k], id + self.buffer_size, self.buffer_size, self.shapes[k], self.dtypes[k])
+
+        return True
+
+    def store(self):
         # save relevant fields for recall
-        self.set_attr("meta", "storage_index", self.index)
-        self.set_attr("meta", "storage_buffer_size", self.buffer_size)
-        self.set_attr("meta", "storage_dset_index", self.dset_index)
+        self.file["buffer"].attrs["length"] = self.length
+        self.file["buffer"].attrs["groups"] = self.groups
 
         # write remainig data to disk
-        self.write_dset(self.dset_index)
+        if self.buffer_prev:
+            for name in self.groups:
+                self.buffer_prev[name].store()
+        if self.buffer:
+            for name in self.groups:
+                self.buffer[name].store()
+        if self.buffer_next:
+            for name in self.groups:
+                self.buffer_next[name].store()
+
         return
 
 
-    def get_attr(self, group_name, attr_name):
-        '''Get attribute of h5py group to read metadata
-        attr_name:  string
-        '''
-        if group_name == "meta":
-            return self.meta_group.attrs[attr_name]
-        else:
-            return self.data_group[group_name].attrs[attr_name]
+class Buffer():
+    def __init__(self, file, name, id, size, shape, dtype):
+        self.thread = None
 
-    def set_attr(self, group_name, attr_name, attr_value):
-        '''Set attribute of h5py group to store metadata
-        attr_name:  string
-        attr_value: array_like
-        '''
-        if group_name == "meta":
-            self.meta_group.attrs[attr_name] = attr_value
-        else:
-            self.data_group[group_name].attrs[attr_name] = attr_value
+        self.id = id
+        self.name = name
+        self.shape = shape
+        self.dtype = dtype
+        self.size = size
+
+        if not self.name in file["buffer"]:
+            print("Storage: critical error")
+
+        self.buffer = None
+        self.changed = False
+
+        self.dset = file["buffer"][self.name]
+
+        super_length = self.dset.shape[0]
+        self.length = min(max(0, super_length - self.id), self.size)
+
+        self.recall()
+
         return
 
-
-    def create_group(self, group_name):
-        '''Create a new h5py group
-        group_name: name of the new group
-        '''
-        if not group_name in self.data_group:
-            self.data_group.create_group(group_name)
-            self.buffer[group_name] = [ np.zeros((1)) ] * self.buffer_size
-        return
-
-    def delete_group(self, group_name):
-        '''Delete a new h5py group
-        group_name: name of the group
-        '''
-        del self.buffer[group_name]
-        del self.data_group[group_name]
-        return
-
-    def append(self, dict):
-        '''Appends to the end of the buffer at in dict specified groups. Not included groups will be zero
-        dict:   dictionary with group_name as index and nparray to write as payload
-        '''
-
-        # we may have to load from disk
-        if self.buffer_index == self.buffer_size:
-            dset_index = (self.index - 1) // self.buffer_size
-        else:
-            dset_index = self.index // self.buffer_size
-        done = self.read_dset(dset_index)
-        if not done:
-            return False
-
-        if self.buffer_index >= self.buffer_size:
-            # write to disk
-            self.write_dset(self.dset_index)
-            self.dset_index += 1
-            self.dset_current = self.dset_index
-
-            # reset buffer
-            self.buffer_index = 0
-            self.buffer_offset += self.buffer_size
-
-        for group_name in dict:
-            self.buffer[group_name][self.buffer_index] = dict[group_name]
-
-        self.buffer_index += 1
-        self.index += 1
-
-        self.dset_current_changed = True
-        return True
-
-    def set(self, i, dict):
-        '''Sets index i of the continous buffer to given object. This can involve a trip to the hard drive.
-        i:      the index in the continous buffer
-        dict:   dictionary with group_name as index and nparray to write as payload
-        '''
-
-        # i out of bounds
-        if i < 0 or i > self.index:
-            return False
-
-        # just append, were at the current position anyway
-        if i == self.index:
-            return self.append(dict)
-
-        # we may have to load from disk
-        done = self.read_dset(i // self.buffer_size)
-        if not done:
-            return False
-
-        for group_name in dict:
-            self.buffer[group_name][i - self.buffer_offset] = dict[group_name]
-            self.dset_current_changed = True
-        return True
-
-    def get(self, group_name, i):
-        '''Gets object at index i of the continous buffer. This can invole a trip to the hard drive.
-        i:      the index in the continous buffer
-        '''
-        # i out of bounds
-        if i < 0 or i > self.index - 1:
-            return None
-
-        # we may have to load from disk
-        done = self.read_dset(i // self.buffer_size)
-        if not done:
-            return None
-        return self.buffer[group_name][i - self.buffer_offset]
-
-    def write_dset(self, dset_index):
-        if dset_index < 0:
-            return
-        if not self.dset_current_changed:
-            return
-        dset_name = str(dset_index)
-        print("Storage: writing dataset " + dset_name)
-
-        for group_name in self.data_group:
-            if not dset_name in self.data_group[group_name]:
-                # assuming all entries of one group have the same shape
-                dset_shape = (self.buffer_size,) + self.buffer[group_name][0].shape
-                # new dataset with first dimensions length of buffer to write
-                dset = self.data_group[group_name].create_dataset(dset_name, dset_shape, chunks=True, compression="lzf")
-            else:
-                dset = self.data_group[group_name][dset_name]
-
-            for i in range(self.buffer_index):
-                dset[i] = self.buffer[group_name][i]
-            dset.attrs["storage_buffer_index"] = self.buffer_index
-        return
-
-    def read_dset(self, dset_index):
-        if dset_index < 0:
-            return False
-
-        if self.dset_current == dset_index:
+    def recall(self):
+        if self.buffer:
             return True
-        self.write_dset(self.dset_current)
-        dset_name = str(dset_index)
-        print("Storage: reading dataset " + dset_name)
 
-        for group_name in self.data_group:
-            if not dset_name in self.data_group[group_name]:
-                return False
+        if self.length != 0:
+            print("Storage: recalling " + self.name + "[" + str(self.id) + ":" + str(self.id + self.length) + "]")
 
-            self.buffer_index = self.data_group[group_name][dset_name].attrs["storage_buffer_index"]
-            for i in range(self.buffer_index):
-                self.buffer[group_name][i] = self.data_group[group_name][dset_name][i]
+        '''if self.thread:
+            self.thread.join()
+        self.thread = BufferReader(self)
+        self.thread.start()'''
+        reader = BufferReader(self)
+        reader.run()
 
-        self.dset_current = dset_index
-        self.dset_current_changed = False
-        self.buffer_offset = dset_index * self.buffer_size
+        return True
+
+    def store(self):
+        if not self.buffer:
+            return True
+
+        if self.changed:
+            print("Storage: storing " + self.name + "[" + str(self.id) + ":" + str(self.id + self.length) + "]")
+            '''if self.thread:
+                self.thread.join()
+            self.thread = BufferWriter(self)
+            self.thread.start()'''
+            writer = BufferWriter(self)
+            writer.run()
+
         return True
 
 
-    def test(self, n):
-        self.create_group("test");
-        d = {}
+    def set(self, index, val):
+        if index < 0 or index >= self.size or index > self.length:
+            return False
 
-        for i in range(n):
-            d["test"] = np.array([[i, i], [i, i]], dtype=np.float32)
-            self.append(d)
+        if self.shape != val.shape:
+            return False
+
+        if not self.buffer:
+            return False
+
+        if self.thread:
+            self.thread.join()
+            self.thread = None
+
+        self.buffer[index] = val
+        self.changed = True
+
+        if index == self.length:
+            self.length += 1
+
+        return True
+
+    def get(self, index):
+        if index < 0 or index > self.length:
+            return None
+
+        if not self.buffer:
+            return None
+
+        if self.thread:
+            self.thread.join()
+            self.thread = None
+
+        return self.buffer[index]
+
+
+class BufferWriter(threading.Thread):
+    lock = threading.Lock()
+
+    def __init__(self, buffer):
+        threading.Thread.__init__(self)
+        self.buffer = buffer
         return
 
+    def run(self):
+        BufferWriter.lock.acquire()
+
+        super_length = self.buffer.dset.shape[0]
+        if super_length < self.buffer.id + self.buffer.length:
+            self.buffer.dset.resize(self.buffer.id + self.buffer.length, axis=0)
+            
+        self.buffer.dset[self.buffer.id:self.buffer.id + self.buffer.length] = self.buffer.buffer[0:self.buffer.length]
+
+        self.buffer.buffer = None
+        self.buffer.changed = False
+
+        BufferWriter.lock.release()
+        return
+
+class BufferReader(threading.Thread):
+    def __init__(self, buffer):
+        threading.Thread.__init__(self)
+        self.buffer = buffer
+        return
+
+    def run(self):
+        if not self.buffer.buffer:
+            self.buffer.buffer = [ np.array([-1]) ] * self.buffer.size
+
+        self.buffer.length = min(self.buffer.size, max(0, self.buffer.dset.shape[0] - self.buffer.id))
+        self.buffer.buffer[0:self.buffer.length] = self.buffer.dset[self.buffer.id:self.buffer.id + self.buffer.length]
+        self.buffer.changed = False
+
+        return

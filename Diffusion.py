@@ -17,7 +17,7 @@ class PheromoneMap():
 
         #self.diffusion_matrix = np.array([[0.0,0.2,0.0],[0.2,0.0,0.2],[0.0,0.2,0.0]])
         #self.diffusion_matrix = np.array([[0.0625,0.0625,0.0625],[0.0625,0.5,0.0625],[0.0625,0.0625,0.0625]], dtype=np.float32)
-        self.diffusion_matrix = np.array([[0.1,0.1,0.1],[0.1,0.2,0.1],[0.1,0.1,0.1]], dtype=np.float)
+        self.diffusion_matrix = np.array([[0.1,0.1,0.1],[0.1,0.2,0.1],[0.1,0.1,0.1]], dtype=np.float32)
 
     def to_dict(self):
         d = {}
@@ -39,6 +39,9 @@ class PheromoneMap():
         # convolve to blur pheromone
         #self.phero_map = scipy.signal.fftconvolve(self.phero_map, self.diffusion_matrix, mode="same")
         scipy.ndimage.filters.convolve(self.phero_map, self.diffusion_matrix, output=self.phero_map, mode="constant")
+
+        # dunno why, looks like scipy messes with the array somehow
+        self.phero_map = self.phero_map.astype(np.float32)
 
     def convert_coordinates(self, position):
         shift = np.array(self.phero_map.shape) / 2.
