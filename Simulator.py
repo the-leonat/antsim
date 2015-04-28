@@ -44,9 +44,10 @@ class Simulator():
     def record(self, seconds, step = 1, filename = "record.sim"):
 
         # new storage object
-        sto = Storage(filename, 100)
-        sto.create_group("ant")
-        sto.create_group("phero")
+        groups = ["ant", "phero"]
+        shapes = [(2, len(self.world.world_objects), 2), self.world.phero_map.phero_map.shape]
+        dtypes = [np.float, np.float32]
+        sto = Storage(filename, groups, shapes, dtypes, 100)
 
         #loop increment for recorded steps
         record_count = 0
@@ -60,10 +61,8 @@ class Simulator():
             self.world.tick()
 
             if x % step == 0:
-                dict = {}
-                dict["ant"] = self.world.world_objects_to_numpy()
-                dict["phero"] = self.world.phero_map.phero_map.astype(np.float16)
-                sto.append(dict)
+                sto.set("ant", record_count, self.world.world_objects_to_numpy())
+                sto.set("phero", record_count, self.world.phero_map.phero_map)
 
                 record_count += 1
             
@@ -74,17 +73,17 @@ class Simulator():
         print "#simulated " + str(n) + " frames."
         print "#recorded " + str(record_count) + " frames."
 
-        sto.set_attr("meta", "version", "0.3")
-        sto.set_attr("meta", "frame_count", n)
-        sto.set_attr("meta", "record_step", step)
+        sto.keyval_set("version", "0.3")
+        sto.keyval_set("frame_count", n)
+        sto.keyval_set("record_step", step)
 
-        sto.set_attr("meta", "world_dimensions", self.world.dimensions)
-        sto.set_attr("meta", "world_delta_time", self.world.delta_time)
+        sto.keyval_set("world_dimensions", self.world.dimensions)
+        sto.keyval_set("world_delta_time", self.world.delta_time)
 
-        sto.set_attr("meta", "phero_resolution", self.world.phero_map.resolution)
+        sto.keyval_set("phero_resolution", self.world.phero_map.resolution)
 
         # write remaining changes to disk
-        sto.finish()
+        sto.store()
 
         print "#all done!"
 
