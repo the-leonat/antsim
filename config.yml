@@ -1,20 +1,22 @@
 
 #global config
-delta: 0.05
+delta: 0.05 # 20 steps per second
 world_dimension: [1000, 1000]
+sensor_noise: 0.02
 
 #ant config
 ant:
   #movement
   max_speed: 50
-  min_speed: 10
+  min_speed: 4
   max_turn_angle: 25
-  acceleration: 50
+  acceleration: 100
 
   #proportions
   length: 10
   center_radius: 5
   head_radius: 4
   head_angle: 100
+
 
 

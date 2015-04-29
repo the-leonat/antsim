@@ -4,10 +4,10 @@
 	<head>
 		<meta charset="utf-8">
 
-		<title>reveal.js - The HTML Presentation Framework</title>
+		<title>Antsim</title>
 
 		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
-		<meta name="author" content="Hakim El Hattab">
+		<meta name="author" content="Leonard Puhl">
 
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -15,7 +15,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
 
 		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+		<link rel="stylesheet" href="css/theme/white.css" id="theme">
 
 		<!-- Code syntax highlighting -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
@@ -49,6 +49,10 @@
 				</section>
 
 				<section>
+					<h2>Warum eigentlich </h2>
+				</section>
+
+				<section>
 					<iframe data-autoplay class="stretch" src="https://www.youtube.com/embed/mA37cb10WMU" frameborder="0" allowfullscreen></iframe>
 				</section>
 
@@ -57,19 +61,117 @@
 				</section>
 
 				<section>
+					<h2>Ameisen reagieren auf Reize..</h2>
+				</section>
+
+				<section>
 					<section>
-						<h2>Ameisen reagieren auf Reize..</h2>
+						<h2>1. Kollisionen</h2>
+						<p>Koerperkontakt</p>
 					</section>
 					<section>
-						<p>
-							Koerperkontakt
-							Pheromone (Duftstoffe)
-						</p>
+						<img data-src="img/ant_col_1.png" alt="Ant Collision">
+					</section>
+					<section>
+						<img data-src="img/ant_col_2.png" alt="Ant Collision">
 					</section>
 				</section>
 
+				<section>
+					<section>
+						<h2>2. Pheromone</h2>
+						<p>Duftstoffe</p>
+					</section>
+					<section>
+						<img data-src="img/ant_phero_1.png" alt="Ant Collision">
+					</section>
+					<section>
+						<img data-src="img/ant_phero_2.png" alt="Ant Collision">
+					</section>
+				</section>
 
+				<section>
+					<h2>Wo leben unsere Ameisen eigentlich?</h2>
+				</section>
 
+				<section>
+					<h2>In einem Array!</h2>
+					<img data-src="img/ant_single.png" alt="Ant Collision">
+					<img data-src="img/ant_single.png" alt="Ant Collision"><br/>
+					<img data-src="img/ant_single.png" alt="Ant Collision">
+					<img data-src="img/ant_single.png" alt="Ant Collision">
+				</section>
+
+				<section>
+					<section>
+						<h2>Ein kleiner Einblick</h2>
+						<h4>das vereinfachte mathematische Modell</h4>
+					</section>
+
+					<section>
+						<h2>Hauptbestandteile</h2>
+						<ul>
+							<li>Ameise</li>
+							<li>Welt</li>
+						</ul>
+					</section>
+
+					<section>
+						<h2>Ameise</h2>
+						<table class="fragment shrink">
+							<thead>
+								<tr>
+									<th colspan="3">wichtige Variablen</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Position</td>
+									<td>Richtung</td>
+									<td>Geschwindigkeit</td>
+								</tr>
+							</tbody>	
+						</table>
+
+						<ol>
+							<li class="fragment roll-in">ließt aueßere Reize ein und verarbeitet diese</li>
+							<li class="fragment roll-in">-> veraendert ihre Variablen</li>
+							<li class="fragment roll-in">schuettet Pheromon aus</li>
+						</ol>
+					</section>
+
+					<section>
+						<h2>Welt</h2>
+
+						<table class="fragment shrink">
+							<thead>
+								<tr>
+									<th colspan="3">wichtige Variablen</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Liste aller Ameisen</td>
+									<td>Pheromondaten</td>
+								</tr>
+							</tbody>	
+						</table>
+						<ul>
+							<li class="fragment roll-in">ruft die Logik aller Ameisen pro Zeiteinheit auf</li>
+							<li class="fragment roll-in">berechnet Entfernungen sehr schnell ueber spezielle Datenstrukturen</li>
+							<li class="fragment roll-in">verteilt alle Pheromone (simuliert eine Diffusion)</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<h2>Experimentiert selber</h2>
+					<p>https://github.com/leonard0x/antsim</p>
+				</section>
+
+				<section>
+					<h2>Vielen Dank fuer die Aufmerksamkeit.</h2>
+				</section>
 				<!-- Example of nested vertical slides -->
 				<section>
 					<section>
@@ -405,7 +507,7 @@ Reveal.addEventListener( 'customevent', function() {
 				history: true,
 				center: true,
 
-				transition: 'slide', // none/fade/slide/convex/concave/zoom
+				transition: 'convex', // none/fade/slide/convex/concave/zoom
 
 				// Optional reveal.js plugins
 				dependencies: [
