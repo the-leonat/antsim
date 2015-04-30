@@ -7,10 +7,9 @@ config = yaml.load(open("config.yml"))
 
 class PheromoneMap():
     def __init__(self, resolution = 1.):
-        #elements
+        self.delta = 0.
 
         self.resolution = resolution
-        self.max_concentration = 20.
 
         self.phero_map = np.zeros(tuple(np.array(config["world_dimension"]) * resolution), dtype=np.float32)
         self.phero_changes = []
@@ -25,21 +24,17 @@ class PheromoneMap():
         return d
 
     def tick(self, delta):
+        self.delta += delta
+
         # apply all changes enqued during last round
-        #amount_sum = 0
         for i in self.phero_changes:
-            #amount_sum += i[2]
             self.phero_map[i[0], i[1]] = i[2]
         self.phero_changes = []
 
-        #print(np.sum(self.phero_map))
-
-        #self.phero_map -= (amount_sum / (self.phero_map.shape[0] * self.phero_map.shape[1]))
-        #self.phero_map -= (np.sum(self.phero_map) - self.max_concentration) / (self.phero_map.shape[0] * self.phero_map.shape[1])
-
         # convolve to blur pheromone
-        #self.phero_map = scipy.signal.fftconvolve(self.phero_map, self.diffusion_matrix, mode="same")
-        scipy.ndimage.filters.convolve(self.phero_map, self.diffusion_matrix, output=self.phero_map, mode="constant")
+        while self.delta > 0.1:
+            self.delta -= 0.1
+            scipy.ndimage.filters.convolve(self.phero_map, self.diffusion_matrix, output=self.phero_map, mode="constant")
 
         # dunno why, looks like scipy messes with the array somehow
         self.phero_map = self.phero_map.astype(np.float32)
