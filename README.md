@@ -14,6 +14,6 @@ Python Simulator.py
  - vf (filename)
 
 ## Example
-	Python Simulator.py -r -v -rt 60 -rt 5 -rf test.hdf5
+	Python Simulator.py -r -v -rt 60 -rs 5 -rf test.hdf5
 
 	Simulates for 60 seconds, saves every 5th step to file test.hdf5 and does show it afterwards
