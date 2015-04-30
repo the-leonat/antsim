@@ -15,8 +15,6 @@ class PheromoneMap():
         self.phero_map = np.zeros(tuple(np.array(config["world_dimension"]) * resolution), dtype=np.float32)
         self.phero_changes = []
 
-        self.ant_sensor_noise = config["sensor_noise"]
-
         #self.diffusion_matrix = np.array([[0.1,0.1,0.1],[0.1,0.2,0.1],[0.1,0.1,0.1]], dtype=np.float32)
         self.diffusion_matrix = np.array([[0.0999,0.0999,0.0999],[0.0999,0.197,0.0999],[0.0999,0.0999,0.0999]], dtype=np.float32)
 
@@ -34,7 +32,7 @@ class PheromoneMap():
             self.phero_map[i[0], i[1]] = i[2]
         self.phero_changes = []
 
-        print(np.sum(self.phero_map))
+        #print(np.sum(self.phero_map))
 
         #self.phero_map -= (amount_sum / (self.phero_map.shape[0] * self.phero_map.shape[1]))
         #self.phero_map -= (np.sum(self.phero_map) - self.max_concentration) / (self.phero_map.shape[0] * self.phero_map.shape[1])
@@ -58,7 +56,7 @@ class PheromoneMap():
 
     def get_pheromone_concentration(self, position, radius):
         y,x = self.convert_coordinates(position)
-        return self.phero_map[x,y] + np.random.normal(0., self.ant_sensor_noise)
+        return self.phero_map[x,y]
 
     def set_pheromone_concentration(self, position, amount):
         y,x = self.convert_coordinates(position)
