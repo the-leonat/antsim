@@ -23,7 +23,9 @@ class Ant(WorldObject):
     head_radius = config["ant"]["head_radius"]
     head_angle = config["ant"]["head_angle"]
 
-    angle_noise_error = config["ant"]["angle_noise_error"]
+    signal_noise = config["ant"]["angle_noise_error"]
+
+    phero_speed_down_treshold = config["ant"]["phero_speed_down_treshold"]
 
     def __init__(self, position, direction, world_instance = None):
         WorldObject.__init__(self, position, world_instance)
@@ -114,27 +116,25 @@ class Ant(WorldObject):
         # angle
         # maybe divide by max pheromone concentration
 
-        try:
-            c_left_avg = c_left / (c_left + c_right)
-            c_right_avg = c_right / (c_left + c_right)
+        if c_left + c_right > 0.: 
         
-            a = c_left_avg if c_left_avg > c_right_avg else -c_right_avg
+            a = c_left - c_right
 
-            if c_left_avg > c_right_avg:
-                a = c_left_avg
-            elif c_left_avg < c_right_avg:
-                a = -c_right_avg
-            else:
-                return False
+            #SIGMOID FUNCTION
+  
+            a = 2 / ( 1 + np.exp(-4 * a))  -1
 
-            if np.allclose(a, 0, 1e-4):
-                return False
+            a += np.random.normal(0, Ant.signal_noise) * delta
 
-            self.direction = rotate_vector(self.direction, (self.max_turn_angle * a * delta) + (np.random.normal(0, self.angle_noise_error) * delta))
-            return np.absolute(c_left_avg - c_right_avg)
-        except:
-            self.direction = rotate_vector(self.direction, np.random.normal(0, self.angle_noise_error) * delta)
-            return False
+            turn_angle = (self.max_turn_angle * a * delta)
+
+            #print turn_angle
+
+            self.direction = rotate_vector(self.direction, turn_angle)
+            return np.absolute(a)
+        else:
+            self.direction = rotate_vector(self.direction, self.max_turn_angle * np.random.normal(0, Ant.signal_noise) * delta)
+            return 0
 
     def circuit_world(self):
         shift = self.world.dimensions / 2
@@ -171,18 +171,17 @@ class Ant(WorldObject):
         '''
 
         #set pheromone concentration
-        self.world.phero_map.add_pheromone_concentration(self.position - (self.direction * self.length / 2), 1. * delta * self.speed)
+        self.world.phero_map.add_pheromone_concentration(self.position - (self.direction * self.length / 2), 100. * delta * self.speed)
 
         evaded = False
         trailed = False
 
         evaded = self.evade_objects(delta)
         if not evaded:
-            traile_change = self.trail_pheromone(delta)
+            trail_change = self.trail_pheromone(delta)
 
-            if traile_change >= 0.8:
+            if trail_change >= Ant.phero_speed_down_treshold:
                 self.speed_down(delta)
-                print "slow"
             else:
                 self.speed_up(delta)
         else:

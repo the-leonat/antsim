@@ -118,7 +118,7 @@ class MainView(pyglet.window.Window):
         dim_x, dim_y = phero_map.shape
 
         #amplify values
-        label *= 8
+        label /= 10
         label = np.clip(label, 0., 1.)
 
         #display phero map in light red
@@ -209,7 +209,7 @@ class MainView(pyglet.window.Window):
 
 
     def load_file(self, filename):
-        self.storage = Storage(filename, 100)
+        self.storage = Storage(filename, buffer_size = 100)
 
         if self.storage.keyval_get("version") != self.VERSION:
             print("Viewer Version != Simulator Version: " + str(self.VERSION))

@@ -5,9 +5,9 @@ world_dimension: [1000, 1000]
 
 #ant config
 ant:
-  #movement
+  #movement all per second
   max_speed: 50
-  min_speed: 4
+  min_speed: 10
   max_turn_angle: 40
   acceleration: 100
 
@@ -15,10 +15,12 @@ ant:
   length: 10
   center_radius: 5
   head_radius: 4
-  head_angle: 100
+  head_angle: 50
 
   #determines the max angle which can be added due to signnoise 
-  angle_noise_error: 10
+  angle_noise_error: 0.2
+
+  phero_speed_down_treshold: 0.8
 
 
 

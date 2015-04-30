@@ -2,3 +2,4 @@
 record*
 profile*.txt
 *.py~
+*.hdf5
