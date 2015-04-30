@@ -5,13 +5,13 @@ antsim is a multi agent simulation, which tries to emulate the trailfinding beha
 ## Usage
 
 Python Simulator.py
-	-r (record)
-	-rt (time in seconds to record)
-	-rs (record every nth step)
-	-rf (filename)
-
-	-v (view)
-	-vf (filename)
+  -r (record)
+  -rt (time in seconds to record)
+  -rs (record every nth step)
+  -rf (filename)
+  
+  -v (view)
+  -vf (filename)
 
 ## Example
 	Python Simulator.py -r -v -rt 60 -rt 5 -rf test.hdf5
