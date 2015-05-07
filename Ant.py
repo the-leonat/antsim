@@ -124,7 +124,7 @@ class Ant(WorldObject):
   
             a = 2 / ( 1 + np.exp(-4 * a))  -1
 
-            a += np.random.normal(0, Ant.signal_noise) * delta
+            a += np.random.normal(0, Ant.signal_noise)
 
             turn_angle = (self.max_turn_angle * a * delta)
 

@@ -15,10 +15,10 @@ ant:
   length: 10
   center_radius: 5
   head_radius: 4
-  head_angle: 50
+  head_angle: 100
 
   #determines the max angle which can be added due to signnoise 
-  angle_noise_error: 0.4
+  angle_noise_error: 0.25
 
   phero_speed_down_treshold: 0.8
 

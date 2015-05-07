@@ -25,6 +25,8 @@ class Simulator():
 
     def __init__(self):
         self.world = World()
+        self.avg_fps = np.zeros((200))
+        self.avg_fps_index = 0
 
     def simulate_steps(self, n = 1):
         '''
@@ -47,7 +49,7 @@ class Simulator():
         groups = ["ant", "phero"]
         shapes = [(3, len(self.world.world_objects), 2), self.world.phero_map.phero_map.shape]
         dtypes = [np.float, np.float32]
-        sto = Storage(filename, groups, shapes, dtypes, 100)
+        sto = Storage(filename, groups, shapes, dtypes, 1000)
 
         #loop increment for recorded steps
         record_count = 0
@@ -66,8 +68,19 @@ class Simulator():
 
                 record_count += 1
             
+
             fps = int(1 / (time.clock() - start))
-            self.print_progress("#simulating frames... ", x, n, fps)
+
+            if self.avg_fps[0] == 0:
+                self.avg_fps.fill(fps)
+            else:
+                self.avg_fps[self.avg_fps_index] = fps
+                if self.avg_fps_index + 1 > len(self.avg_fps) - 1:
+                    self.avg_fps_index = 0
+                else:
+                    self.avg_fps_index += 1
+
+            self.print_progress("#simulating frames... ", x, n, np.average(self.avg_fps))
 
 
         print "#simulated " + str(n) + " frames."
@@ -89,7 +102,8 @@ class Simulator():
 
     def print_progress(self, label, x, max, fps):
         perc = (x / max)
-        print "\r" + label + "{:.2%}".format(perc) + " " + str(fps) + "fps",
+        time_left = (max - x) / (fps * 60)
+        print "\r" + label + "{:.1%}".format(perc) + " " + "{:.1f}".format(time_left) + "m",
         sys.stdout.flush()
 
 
