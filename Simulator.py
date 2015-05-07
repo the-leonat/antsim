@@ -45,7 +45,7 @@ class Simulator():
 
         # new storage object
         groups = ["ant", "phero"]
-        shapes = [(2, len(self.world.world_objects), 2), self.world.phero_map.phero_map.shape]
+        shapes = [(3, len(self.world.world_objects), 2), self.world.phero_map.phero_map.shape]
         dtypes = [np.float, np.float32]
         sto = Storage(filename, groups, shapes, dtypes, 100)
 
@@ -73,7 +73,7 @@ class Simulator():
         print "#simulated " + str(n) + " frames."
         print "#recorded " + str(record_count) + " frames."
 
-        sto.keyval_set("version", "0.3")
+        sto.keyval_set("version", "0.4")
         sto.keyval_set("frame_count", n)
         sto.keyval_set("record_step", step)
 

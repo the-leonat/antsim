@@ -90,10 +90,11 @@ class World():
         return objects
 
     def world_objects_to_numpy(self, type=None):
-        arr = np.zeros((2, len(self.world_objects), 2), dtype=np.float32)
+        arr = np.zeros((3, len(self.world_objects), 2), dtype=np.float32)
         for i in range(len(self.world_objects)):
             arr[0,i,:] = self.world_objects[i].position
             arr[1,i,:] = self.world_objects[i].direction
+            arr[2,i,:] = self.world_objects[i].speed
         return arr
 
 

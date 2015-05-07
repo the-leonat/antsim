@@ -42,7 +42,7 @@ class MainView(pyglet.window.Window):
 
         #can either be -1,0 or 1 (left, none, right)
         self.state_navigation = 0
-        self.VERSION = "0.3"
+        self.VERSION = "0.4"
         self.transform = np.array([0,0], dtype=np.int)
 
         clock.schedule_interval(self.update_frame_count, 1. / self.fps)
@@ -261,8 +261,7 @@ def sp():
     plt.show()
 
 if __name__ == "__main__":
-    #startup()
-    view = MainView(fps=40)
+    #startup()view = MainView(fps=40)
     view.load_file("record8")
     pyglet.app.run()
 
