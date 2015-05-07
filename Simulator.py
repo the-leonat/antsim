@@ -103,7 +103,7 @@ class Simulator():
     def print_progress(self, label, x, max, fps):
         perc = (x / max)
         time_left = (max - x) / (fps * 60)
-        print "\r" + label + "{:.1%}".format(perc) + " " + "{:.1f}".format(time_left) + "m",
+        print "\r" + label + "{:.1%}".format(perc) + " ~" + "{:.1f}".format(time_left) + "m" + " " + "{:.0f}".format(fps) + "fps",
         sys.stdout.flush()
 
 
