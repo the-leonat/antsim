@@ -18,38 +18,54 @@ import pyglet.window.key as key
 
 
 class MainView(pyglet.window.Window):
-    def __init__(self, fps = 20):
+    version = "0.4"
+
+    def __init__(self, filename, fps = 20):
         super(MainView, self).__init__(resizable=True)
 
-        self.label_time_passed = pyglet.text.Label('0')
-        self.label_current_frame = pyglet.text.Label('0', x = 100)
-
-        #vertex list
-        self.border = None
+        self.init_labels()
 
         self.fps = fps
+        self.transform = np.array([0,0], dtype=np.int)
 
-        #set by input file ---
-        self.delta_time = None
-        self.pheromone_image_data = None
-        self.record_step = None
-        self.number_of_frames = None
-        self.dimensions = None
-        # -----
+        self.load_file(filename)
+
+        self.init_border()
+
+        self.init_vertex()
 
         self.current_frame = 0
         self.state_play = False
-
         #can either be -1,0 or 1 (left, none, right)
         self.state_navigation = 0
-        self.VERSION = "0.4"
-        self.transform = np.array([0,0], dtype=np.int)
 
-        clock.schedule_interval(self.update_frame_count, 1. / self.fps)
+        self.start()
+
+    def load_file(self, filename):
+        self.storage = Storage(filename, buffer_size = 100)
+
+        if not self.check_version( self.storage.keyval_get("version") ): return
+
+        self.delta_time = self.storage.keyval_get("world_delta_time")
+        self.number_of_frames = self.storage.keyval_get("frame_count")
+        self.dimensions = self.storage.keyval_get("world_dimensions")
+        self.record_step = self.storage.keyval_get("record_step")
+        self.ant_count = 100 #self.storage.keyval_get("ant_count")
+
+    def check_version(self, file_version):
+        if file_version != MainView.version:
+            print("Viewer Version != Simulator Version: " + str(self.VERSION))
+            return False
+        return True
+
+    def init_labels(self):
+        self.label_time_passed = pyglet.text.Label('0', y = 5)
+        self.label_current_frame = pyglet.text.Label('0', x = 100, y = 5)
+        self.label_fps = pyglet.text.Label('0', x = 300, y = 5)
 
     def init_border(self):
         cx, cy = self.convert_coordinates(np.array([0,0]))
-        print cx,cy
+
         sx, sy = np.array(self.dimensions, dtype=np.float) / 2.
 
         self.border = pyglet.graphics.vertex_list(4,
@@ -60,23 +76,25 @@ class MainView(pyglet.window.Window):
                 cx - sx, cy + sy
                 )
             )
-)
+        )
+
+    def init_vertex(self):
+        self.ants = pyglet.graphics.vertex_list(
+            #double size ant is drawn with 2 vertices (line)
+            self.ant_count * 2, "v2f/stream", ("c3B/static", tuple(np.full((self.ant_count * 3 * 2), 255, dtype=int) ))
+        )
+
+    def start(self):    
+        clock.schedule_interval(self.update_frame_count, 1. / self.fps)
 
     def on_draw(self):
-
         time_passed = self.delta_time * self.current_frame * self.record_step
 
         self.label_time_passed.text = "{:.2f}".format(time_passed) + "s"
         self.label_current_frame.text = "f_num:" + str(self.current_frame + 1) + "/" + str(self.storage.length)
-
+        self.label_fps.text = str(pyglet.clock.get_fps()) + "fps"
         #get the right frame of data
         ant_numpy_list = self.storage.get("ant", self.current_frame)
-        ant_list = []
-        for i in range(ant_numpy_list.shape[1]):
-            d = {}
-            d["position"] = ant_numpy_list[0,i,:]
-            d["direction"] = ant_numpy_list[1,i,:]
-            ant_list.append(d)
 
         #-------- draw ---------
         self.clear()
@@ -89,23 +107,16 @@ class MainView(pyglet.window.Window):
 
         self.border.draw(pyglet.gl.GL_LINE_LOOP)
 
-        for ant in ant_list:
-            position = self.convert_coordinates(ant["position"])
-            direction = ant["direction"] * 5
+        self.ants.vertices[0::4] = self.convert_x( ant_numpy_list[0,:,0] - (ant_numpy_list[1,:,0] * 5) )
+        self.ants.vertices[1::4] = self.convert_y( ant_numpy_list[0,:,1] - (ant_numpy_list[1,:,1] * 5) )
+        self.ants.vertices[2::4] = self.convert_x( ant_numpy_list[0,:,0] + (ant_numpy_list[1,:,0] * 5) )
+        self.ants.vertices[3::4] = self.convert_y( ant_numpy_list[0,:,1] + (ant_numpy_list[1,:,1] * 5) )
 
-            direction_line = np.concatenate((position - direction, position + direction))
-
-            pyglet.graphics.draw(2, pyglet.gl.GL_LINES,
-                ("v2f", direction_line)
-            )
-
-            '''pyglet.graphics.draw(1, pyglet.gl.GL_POINTS,
-                ('v2f', position ), ('c4B', (255,0,0,255))
-            )'''
-
+        self.ants.draw(pyglet.gl.GL_LINES)
 
         self.label_time_passed.draw()
         self.label_current_frame.draw()
+        self.label_fps.draw()
 
     def draw_grid(self):
         range_x = range(-500, 500, 100)
@@ -208,25 +219,6 @@ class MainView(pyglet.window.Window):
             self.current_frame -= 1
 
 
-    def load_file(self, filename):
-        self.storage = Storage(filename, buffer_size = 100)
-
-        if self.storage.keyval_get("version") != self.VERSION:
-            print("Viewer Version != Simulator Version: " + str(self.VERSION))
-            return
-
-        self.delta_time = self.storage.keyval_get("world_delta_time")
-        self.number_of_frames = self.storage.keyval_get("frame_count")
-        self.dimensions = self.storage.keyval_get("world_dimensions")
-        self.record_step = self.storage.keyval_get("record_step")
-
-        #reset framecounter to zero
-        self.current_frame = 0
-
-        #init border dependet on dimension
-        self.init_border()
-
-
     def update_frame_count(self, dt):
         if self.state_navigation == 1:
             self.state_play = False
@@ -256,9 +248,12 @@ class MainView(pyglet.window.Window):
         #convert to integer array
         return position_vector + transform_v + self.transform
 
-def sp():
-    plt.imshow(view.phero_map_list)
-    plt.show()
+    def convert_x(self, x):
+        return x + self.width / 2 + self.transform[0]
+
+    def convert_y(self, y):
+        return y + self.height / 2 + self.transform[1]
+
 
 if __name__ == "__main__":
     #startup()view = MainView(fps=40)

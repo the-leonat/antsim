@@ -21,7 +21,7 @@ class Simulator():
     This class simulates the behavior of worldobjects over time
     '''
 
-    buffer_size = 100
+    buffer_size = 2000
 
     def __init__(self):
         self.world = World()
@@ -94,6 +94,7 @@ class Simulator():
         sto.keyval_set("world_delta_time", self.world.delta_time)
 
         sto.keyval_set("phero_resolution", self.world.phero_map.resolution)
+        sto.keyval_set("ant_count", self.world.get_ant_count() )
 
         # write remaining changes to disk
         sto.store()
@@ -182,6 +183,5 @@ if __name__ == "__main__":
         s.record(record_time, record_step, record_filename)
 
     if view:
-        view = MainView(view_fps)
-        view.load_file(view_filename)
+        view = MainView(view_filename, view_fps)
         pyglet.app.run()
