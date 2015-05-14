@@ -50,7 +50,7 @@ class MainView(pyglet.window.Window):
         self.number_of_frames = self.storage.keyval_get("frame_count")
         self.dimensions = self.storage.keyval_get("world_dimensions")
         self.record_step = self.storage.keyval_get("record_step")
-        self.ant_count = 100 #self.storage.keyval_get("ant_count")
+        self.ant_count = self.storage.keyval_get("ant_count")
 
     def check_version(self, file_version):
         if file_version != MainView.version:
