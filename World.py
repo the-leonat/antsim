@@ -126,9 +126,6 @@ class World():
 
         self.kdtree = cKDTree(np.array(point_list, dtype=np.float), 50)
 
-    def get_ant_count(self):
-        return len(self.world_objects)
-
     def get_objects_in_range(self, pos, radius):
         '''returns a list of objects in a given range
         needs a position vector and a radius

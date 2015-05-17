@@ -94,7 +94,7 @@ class Simulator():
         sto.keyval_set("world_delta_time", self.world.delta_time)
 
         sto.keyval_set("phero_resolution", self.world.phero_map.resolution)
-        sto.keyval_set("ant_count", self.world.get_ant_count() )
+        sto.keyval_set("ant_count", len(self.world.get_objects(type="ant")) )
 
         # write remaining changes to disk
         sto.store()

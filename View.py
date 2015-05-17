@@ -7,7 +7,7 @@ from pyglet import clock
 from World import *
 from Ant import *
 from Storage import *
-from pygarrayimage.arrayimage import ArrayInterfaceImage
+#from pygarrayimage.arrayimage import ArrayInterfaceImage
 
 import time
 import numpy as np
@@ -110,10 +110,10 @@ class MainView(pyglet.window.Window):
         image = self.convert_phero_map(phero_map)
         image.blit(0,0)
 
-        self.ants.vertices[0::4] = ant_numpy_list[0,:,0] - (ant_numpy_list[1,:,0] * 5)
-        self.ants.vertices[1::4] = ant_numpy_list[0,:,1] - (ant_numpy_list[1,:,1] * 5)
-        self.ants.vertices[2::4] = ant_numpy_list[0,:,0] + (ant_numpy_list[1,:,0] * 5)
-        self.ants.vertices[3::4] = ant_numpy_list[0,:,1] + (ant_numpy_list[1,:,1] * 5)
+        self.ants.vertices[0::4] = ant_numpy_list[:,0,0] - (ant_numpy_list[:,1,0] * 5)
+        self.ants.vertices[1::4] = ant_numpy_list[:,0,1] - (ant_numpy_list[:,1,1] * 5)
+        self.ants.vertices[2::4] = ant_numpy_list[:,0,0] + (ant_numpy_list[:,1,0] * 5)
+        self.ants.vertices[3::4] = ant_numpy_list[:,0,1] + (ant_numpy_list[:,1,1] * 5)
 
         self.batch.draw()
 
