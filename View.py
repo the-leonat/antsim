@@ -7,6 +7,7 @@ from pyglet import clock
 from World import *
 from Ant import *
 from Storage import *
+from pygarrayimage.arrayimage import ArrayInterfaceImage
 
 import time
 import numpy as np
@@ -23,6 +24,13 @@ class MainView(pyglet.window.Window):
     def __init__(self, filename, fps = 20):
         super(MainView, self).__init__(resizable=True)
 
+        #the batch for grouped rendering
+        self.batch = pyglet.graphics.Batch()  
+        self.current_frame = 0
+        self.state_play = False
+        #can either be -1,0 or 1 (left, none, right)
+        self.state_navigation = 0
+
         self.init_labels()
 
         self.fps = fps
@@ -33,11 +41,6 @@ class MainView(pyglet.window.Window):
         self.init_border()
 
         self.init_vertex()
-
-        self.current_frame = 0
-        self.state_play = False
-        #can either be -1,0 or 1 (left, none, right)
-        self.state_navigation = 0
 
         self.start()
 
@@ -59,29 +62,27 @@ class MainView(pyglet.window.Window):
         return True
 
     def init_labels(self):
-        self.label_time_passed = pyglet.text.Label('0', y = 5)
-        self.label_current_frame = pyglet.text.Label('0', x = 100, y = 5)
-        self.label_fps = pyglet.text.Label('0', x = 300, y = 5)
+        self.label_time_passed = pyglet.text.Label('0', y = 5, batch=self.batch)
+        self.label_current_frame = pyglet.text.Label('0', x = 100, y = 5, batch=self.batch)
+        self.label_fps = pyglet.text.Label('0', x = 300, y = 5, batch=self.batch)
 
     def init_border(self):
-        cx, cy = self.convert_coordinates(np.array([0,0]))
-
         sx, sy = np.array(self.dimensions, dtype=np.float) / 2.
 
-        self.border = pyglet.graphics.vertex_list(4,
+        self.border = self.batch.add(4, pyglet.gl.GL_LINE_LOOP, None, 
             ("v2f", (
-                cx + sx, cy + sy,
-                cx + sx, cy - sy,
-                cx - sx, cy - sy,
-                cx - sx, cy + sy
+                sx, sy,
+                sx, -sy,
+                -sx, -sy,
+                -sx, sy
                 )
             )
         )
 
     def init_vertex(self):
-        self.ants = pyglet.graphics.vertex_list(
-            #double size ant is drawn with 2 vertices (line)
-            self.ant_count * 2, "v2f/stream", ("c3B/static", tuple(np.full((self.ant_count * 3 * 2), 255, dtype=int) ))
+        #double size ant is drawn with 2 vertices (line)
+        self.ants = self.batch.add(self.ant_count * 2, pyglet.gl.GL_LINES, None, 
+            "v2f/stream", ("c3B/static", tuple(np.full((self.ant_count * 3 * 2), 255, dtype=int) ))
         )
 
     def start(self):    
@@ -93,36 +94,32 @@ class MainView(pyglet.window.Window):
         self.label_time_passed.text = "{:.2f}".format(time_passed) + "s"
         self.label_current_frame.text = "f_num:" + str(self.current_frame + 1) + "/" + str(self.storage.length)
         self.label_fps.text = str(pyglet.clock.get_fps()) + "fps"
+
         #get the right frame of data
         ant_numpy_list = self.storage.get("ant", self.current_frame)
 
         #-------- draw ---------
         self.clear()
+        pyglet.gl.glLoadIdentity()
 
-        center_x, center_y = self.convert_coordinates( np.array([0,0]) )
+        tx, ty = self.convert_coordinates([0,0])
+
+        pyglet.gl.glTranslatef(tx, ty, 0); 
 
         phero_map = self.storage.get("phero", self.current_frame)
         image = self.convert_phero_map(phero_map)
-        image.blit(center_x, center_y)
+        image.blit(0,0)
 
-        self.border.draw(pyglet.gl.GL_LINE_LOOP)
+        self.ants.vertices[0::4] = ant_numpy_list[0,:,0] - (ant_numpy_list[1,:,0] * 5)
+        self.ants.vertices[1::4] = ant_numpy_list[0,:,1] - (ant_numpy_list[1,:,1] * 5)
+        self.ants.vertices[2::4] = ant_numpy_list[0,:,0] + (ant_numpy_list[1,:,0] * 5)
+        self.ants.vertices[3::4] = ant_numpy_list[0,:,1] + (ant_numpy_list[1,:,1] * 5)
 
-        self.ants.vertices[0::4] = self.convert_x( ant_numpy_list[0,:,0] - (ant_numpy_list[1,:,0] * 5) )
-        self.ants.vertices[1::4] = self.convert_y( ant_numpy_list[0,:,1] - (ant_numpy_list[1,:,1] * 5) )
-        self.ants.vertices[2::4] = self.convert_x( ant_numpy_list[0,:,0] + (ant_numpy_list[1,:,0] * 5) )
-        self.ants.vertices[3::4] = self.convert_y( ant_numpy_list[0,:,1] + (ant_numpy_list[1,:,1] * 5) )
-
-        self.ants.draw(pyglet.gl.GL_LINES)
-
-        self.label_time_passed.draw()
-        self.label_current_frame.draw()
-        self.label_fps.draw()
+        self.batch.draw()
 
     def draw_grid(self):
         range_x = range(-500, 500, 100)
         range_y = range(-500, 500, 100)
-
-
 
     def convert_phero_map(self, phero_map):
         label = phero_map.copy()
@@ -140,7 +137,6 @@ class MainView(pyglet.window.Window):
 
         image.anchor_x = int(dim_x / 2)
         image.anchor_y = int(dim_y / 2)
-
 
         return image
 
@@ -247,13 +243,6 @@ class MainView(pyglet.window.Window):
 
         #convert to integer array
         return position_vector + transform_v + self.transform
-
-    def convert_x(self, x):
-        return x + self.width / 2 + self.transform[0]
-
-    def convert_y(self, y):
-        return y + self.height / 2 + self.transform[1]
-
 
 if __name__ == "__main__":
     #startup()view = MainView(fps=40)
