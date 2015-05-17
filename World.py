@@ -84,19 +84,23 @@ class World():
         return d
 
     def world_objects_to_dict(self, type=None):
-        objects = []
-        for o in self.world_objects:
-            objects.append(o.to_dict())
-        return objects
+        objects = self.get_objects(type)
+        dicts = []
+        for o in objects:
+            dicts.append(o.to_dict())
+        return dicts
 
     def world_objects_to_numpy(self, type=None):
-        arr = np.zeros((3, len(self.world_objects), 2), dtype=np.float32)
-        for i in range(len(self.world_objects)):
-            arr[0,i,:] = self.world_objects[i].position
-            arr[1,i,:] = self.world_objects[i].direction
-            arr[2,i,:] = self.world_objects[i].speed
-        return arr
+        objects = self.get_objects(type)
 
+        if len(objects) == 0:
+            return np.zeros((0,))
+
+        arr = np.zeros((len(objects),) + objects[0].to_numpy().shape, dtype=np.float32)
+        for i in range(len(objects)):
+            arr[i] = objects[i].to_numpy()
+
+        return arr
 
     def update_kdtree(self):
         #construct kdtree
@@ -105,7 +109,7 @@ class World():
         shift = self.dimensions / 2.
         border = 10.
         for o in self.world_objects:
-            point_list.append(o.position)
+            point_list.extend(o.get_points())
 
             # add object onto the opposite side but outside world
             for j in range(self.dimensions.shape[0]):
@@ -176,13 +180,16 @@ class World():
         return np.array(in_angle)
 
 
-    def get_objects(self, type = "all"):
+    def get_objects(self, type = None):
         '''returns all objects
-
         type: optional parameter to filter by object type
         '''
+        objects = []
+        for o in self.world_objects:
+            if type == None or o.type == type:
+                objects.append(o)
 
-        return self.world_objects
+        return objects
 
     def add_object(self, object):
         #set world_instance to self
@@ -220,7 +227,9 @@ class WorldObject():
     '''
 
     #this list defines the different object-types which can be later used as labels or for type-filtering
-    object_types = ["ant"]
+    object_types = ["ant", "obstacle"]
+
+    numpy_shape = ()
 
     def __init__(self, position, world_instance = None):
         self.position = np.array(position, dtype=float)
@@ -233,6 +242,11 @@ class WorldObject():
         d["type"] = self.type
         return d
 
+    def to_dict(self):
+        arr = np.zeros(WorldObject.numpy_shape)
+        arr[0,:] = self.position
+        return arr
+
     def set_type(self, typestring):
         if typestring in WorldObject.object_types:
             self.type = typestring
@@ -243,6 +257,9 @@ class WorldObject():
         if self.type == typestring:
             return True
         return False
+
+    def get_points(self):
+        return [ self.position ]
 
     def tick(self, delta):
         '''

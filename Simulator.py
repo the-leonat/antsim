@@ -2,6 +2,7 @@ from __future__ import division
 import Settings as settings
 from World import *
 from Ant import *
+from Obstacle import *
 from View import MainView
 from Storage import *
 
@@ -20,8 +21,6 @@ class Simulator():
     '''
     This class simulates the behavior of worldobjects over time
     '''
-
-    buffer_size = 100
 
     def __init__(self):
         self.world = World()
@@ -46,9 +45,9 @@ class Simulator():
     def record(self, seconds, step = 1, filename = "record.sim"):
 
         # new storage object
-        groups = ["ant", "phero"]
-        shapes = [(3, len(self.world.world_objects), 2), self.world.phero_map.phero_map.shape]
-        dtypes = [np.float, np.float32]
+        groups = ["phero", "ant", "obstacle"]
+        shapes = [ self.world.phero_map.phero_map.shape, (len(self.world.get_objects(type="ant")),) + Ant.numpy_shape, (len(self.world.get_objects(type="obstacle")),) + Obstacle.numpy_shape ]
+        dtypes = [np.float32, np.float, np.float]
         sto = Storage(filename, groups, shapes, dtypes, 1000)
 
         #loop increment for recorded steps
@@ -63,8 +62,9 @@ class Simulator():
             self.world.tick()
 
             if x % step == 0:
-                sto.set("ant", record_count, self.world.world_objects_to_numpy())
                 sto.set("phero", record_count, self.world.phero_map.phero_map)
+                sto.set("ant", record_count, self.world.world_objects_to_numpy(type="ant"))
+                sto.set("obstacle", record_count, self.world.world_objects_to_numpy(type="obstacle"))
 
                 record_count += 1
             
@@ -113,9 +113,16 @@ def create_random_objects(n, dimension = 300):
     '''
     returns a list of n antobjects with random position and direction vectors
     '''
+    objects = []
 
-    #returns n objects with position between (10,10) and (390,390)
-    return [Ant( np.random.uniform(-1,1, (2)) * dimension, np.random.uniform(-1,1, (2)) ) for a in range(0,n)]
+    # n obstacles
+    #objects.extend( [Obstacle( np.random.uniform(-1,1, (2)) * dimension, np.random.uniform(0,2) ) for a in range(0,n)] )
+    objects.append( Obstacle( (0, 0), 50 ) )
+
+    # n ants with position between (10,10) and (390,390)
+    objects.extend( [Ant( np.random.uniform(-1,1, (2)) * dimension, np.random.uniform(-1,1, (2)) ) for a in range(0,n)] )
+
+    return objects
 
 def setup(n = 100):
     '''

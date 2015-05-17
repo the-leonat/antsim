@@ -12,6 +12,8 @@ class Ant(WorldObject):
     class Ant inherits from WorldObject and additionally holds a direction vector ...
     '''
 
+    numpy_shape = (3, 2)
+
     # speed per second
     max_speed = config["ant"]["max_speed"]
     min_speed = config["ant"]["min_speed"]
@@ -42,6 +44,13 @@ class Ant(WorldObject):
         d["direction"] = self.direction
         d["speed"] = self.speed
         return d
+
+    def to_numpy(self):
+        arr = np.zeros(Ant.numpy_shape)
+        arr[0,:] = self.position
+        arr[1,:] = self.direction
+        arr[2,:] = self.speed
+        return arr
 
     def get_left_antenna_position(self):
         pos_head = self.get_head_position()
