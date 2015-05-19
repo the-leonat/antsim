@@ -2,7 +2,7 @@ from __future__ import division
 import Settings as settings
 from World import *
 from Ant import *
-from View import MainView
+import VispyView as MainView
 from Storage import *
 
 import time
@@ -11,6 +11,8 @@ import pyglet
 import sys
 
 import copy
+
+import Global as g
 
 import yaml
 config = yaml.load(open("config.yml"))
@@ -40,16 +42,13 @@ class Simulator():
             #update the world model
             self.world.tick()
 
-        print "time per frame: ", (time.clock() - t_start) / n
-
-
-    def record(self, seconds, step = 1, filename = "record.sim"):
+    def record(self, seconds, step = 1):
 
         # new storage object
         groups = ["ant", "phero"]
         shapes = [(3, len(self.world.world_objects), 2), self.world.phero_map.phero_map.shape]
         dtypes = [np.float, np.float32]
-        sto = Storage(filename, groups, shapes, dtypes, 1000)
+        sto = storage
 
         #loop increment for recorded steps
         record_count = 0
@@ -134,33 +133,31 @@ def setup(n = 100):
 
 if __name__ == "__main__":
 
-    # defaults
+    #INPUT DEFAULTS
+    live = False
+    filename = "record.hdf5"
+
     view = False
-    view_filename = "record.hdf5"
     view_fps = 40
 
     record = False
-    record_filename = "record.hdf5"
     record_time = 5.
     record_step = 10
-
     ant_count = 20
+
+    buffer_size = 100
 
     i=1
     while i < len(sys.argv):
         if sys.argv[i] == "-v":
             view = True
-        elif sys.argv[i] == "-vf":
-            view_filename = sys.argv[i+1]
-            i += 1
         elif sys.argv[i] == "-vfps":
             view_fps = int(sys.argv[i+1])
             i += 1
-
         elif sys.argv[i] == "-r":
             record = True
-        elif sys.argv[i] == "-rf":
-            record_filename = sys.argv[i+1]
+        elif sys.argv[i] == "-f":
+            filename = sys.argv[i+1]
             i += 1
         elif sys.argv[i] == "-rt":
             record_time = float(sys.argv[i+1])
@@ -168,20 +165,34 @@ if __name__ == "__main__":
         elif sys.argv[i] == "-rs":
             record_step = int(sys.argv[i+1])
             i += 1
-
         elif sys.argv[i] == "-ac":
             ant_count = int(sys.argv[i+1])
             i += 1
-
+        elif sys.argv[i] == "-bs":
+            buffer_size = int(sys.argv[i+1])
+            i += 1
+        elif sys.argv[i] == "-live":
+            live = True
+            g.live = live
+            i += 1
         else:
             print("invalid parameter")
 
         i += 1
 
+    if not live:
+        g.storage = Storage(filename, buffer_size)
+
     if record:
-        s = setup(ant_count)
-        s.record(record_time, record_step, record_filename)
+        g.simulator = setup(ant_count)
+
+        if not live:
+            simulator.record(record_time, record_step)
 
     if view:
-        view = MainView(view_filename, view_fps)
-        pyglet.app.run()
+        if not record and live:
+            g.simulator = setup(ant_count)
+
+        MainView.start_view(view_fps)
+
+

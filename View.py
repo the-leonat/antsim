@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 import pyglet.window.key as key
 
+import Global as g
 
 class MainView(pyglet.window.Window):
     version = "0.4"
@@ -36,7 +37,7 @@ class MainView(pyglet.window.Window):
         self.fps = fps
         self.transform = np.array([0,0], dtype=np.int)
 
-        self.load_file(filename)
+        self.load_file()
 
         self.init_border()
 
@@ -44,16 +45,14 @@ class MainView(pyglet.window.Window):
 
         self.start()
 
-    def load_file(self, filename):
-        self.storage = Storage(filename, buffer_size = 100)
+    def load_file(self):
+        if not self.check_version( g.storage.keyval_get("version") ): return
 
-        if not self.check_version( self.storage.keyval_get("version") ): return
-
-        self.delta_time = self.storage.keyval_get("world_delta_time")
-        self.number_of_frames = self.storage.keyval_get("frame_count")
-        self.dimensions = self.storage.keyval_get("world_dimensions")
-        self.record_step = self.storage.keyval_get("record_step")
-        self.ant_count = self.storage.keyval_get("ant_count")
+        self.delta_time = g.storage.keyval_get("world_delta_time")
+        self.number_of_frames = g.storage.keyval_get("frame_count")
+        self.dimensions = g.storage.keyval_get("world_dimensions")
+        self.record_step = g.storage.keyval_get("record_step")
+        self.ant_count = g.storage.keyval_get("ant_count")
 
     def check_version(self, file_version):
         if file_version != MainView.version:
@@ -92,11 +91,11 @@ class MainView(pyglet.window.Window):
         time_passed = self.delta_time * self.current_frame * self.record_step
 
         self.label_time_passed.text = "{:.2f}".format(time_passed) + "s"
-        self.label_current_frame.text = "f_num:" + str(self.current_frame + 1) + "/" + str(self.storage.length)
+        self.label_current_frame.text = "f_num:" + str(self.current_frame + 1) + "/" + str(g.storage.length)
         self.label_fps.text = str(pyglet.clock.get_fps()) + "fps"
 
         #get the right frame of data
-        ant_numpy_list = self.storage.get("ant", self.current_frame)
+        ant_numpy_list = g.storage.get("ant", self.current_frame)
 
         #-------- draw ---------
         self.clear()
@@ -106,7 +105,7 @@ class MainView(pyglet.window.Window):
 
         pyglet.gl.glTranslatef(tx, ty, 0); 
 
-        phero_map = self.storage.get("phero", self.current_frame)
+        phero_map = g.storage.get("phero", self.current_frame)
         image = self.convert_phero_map(phero_map)
         image.blit(0,0)
 
@@ -149,7 +148,7 @@ class MainView(pyglet.window.Window):
             if self.state_play:
                 self.state_play = False
             else:
-                if self.current_frame == self.storage.length - 1:
+                if self.current_frame == g.storage.length - 1:
                     self.current_frame = 0
                 self.state_play = True
 
@@ -195,18 +194,18 @@ class MainView(pyglet.window.Window):
 
     #here work needs to be done
     def next_frame(self, howmany = 1):
-        if self.current_frame + howmany > self.storage.length - howmany:
+        if self.current_frame + howmany > g.storage.length - howmany:
             self.current_frame = 0
         else:
             #stop at border
-            if self.current_frame == self.storage.length - 2:
+            if self.current_frame == g.storage.length - 2:
                 self.state_navigation = 0
 
             self.current_frame += howmany
 
     def previous_frame(self):
         if self.current_frame - 1 < 0:
-            self.current_frame = self.storage.length - 1
+            self.current_frame = g.storage.length - 1
         else:
             #stop at border
             if self.current_frame == 1:
@@ -225,7 +224,7 @@ class MainView(pyglet.window.Window):
 
         if not self.state_play: return
 
-        if self.current_frame + 1 < self.storage.length:
+        if self.current_frame + 1 < g.storage.length:
             self.next_frame()
         else:
             self.state_play = False
@@ -244,8 +243,8 @@ class MainView(pyglet.window.Window):
         #convert to integer array
         return position_vector + transform_v + self.transform
 
-if __name__ == "__main__":
-    #startup()view = MainView(fps=40)
-    view.load_file("record8")
+
+def start_view(fps):
+    view = MainView(fps)
     pyglet.app.run()
 
