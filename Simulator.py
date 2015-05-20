@@ -42,13 +42,13 @@ class Simulator():
             #update the world model
             self.world.tick()
 
-    def record(self, seconds, step = 1):
+    def record(self, filename, seconds, step = 1, buffer_size = 100):
 
         # new storage object
         groups = ["ant", "phero"]
         shapes = [(3, len(self.world.world_objects), 2), self.world.phero_map.phero_map.shape]
         dtypes = [np.float, np.float32]
-        sto = storage
+        sto = g.storage = Storage(filename, groups, shapes, dtypes, buffer_size)
 
         #loop increment for recorded steps
         record_count = 0
@@ -86,7 +86,7 @@ class Simulator():
         print "#recorded " + str(record_count) + " frames."
 
         sto.keyval_set("version", "0.4")
-        sto.keyval_set("frame_count", n)
+        sto.keyval_set("frame_count", record_count)
         sto.keyval_set("record_step", step)
 
         sto.keyval_set("world_dimensions", self.world.dimensions)
@@ -174,22 +174,20 @@ if __name__ == "__main__":
         elif sys.argv[i] == "-live":
             live = True
             g.live = live
-            i += 1
         else:
             print("invalid parameter")
 
         i += 1
 
-    if not live:
-        g.storage = Storage(filename, buffer_size)
-
     if record:
         g.simulator = setup(ant_count)
 
         if not live:
-            simulator.record(record_time, record_step)
+            g.simulator.record(filename, record_time, record_step, buffer_size)
 
     if view:
+        if not live:
+            g.storage = Storage(filename, buffer_size=buffer_size)
         if not record and live:
             g.simulator = setup(ant_count)
 

@@ -32,9 +32,9 @@ class PheromoneMap():
         self.phero_changes = []
 
         # convolve to blur pheromone
-        while self.delta > 0.1:
-            self.delta -= 0.1
-            scipy.ndimage.filters.convolve(self.phero_map, self.diffusion_matrix, output=self.phero_map, mode="wrap")
+        #while self.delta > 0.1:
+            #self.delta -= 0.1
+        scipy.ndimage.filters.convolve(self.phero_map, self.diffusion_matrix, output=self.phero_map, mode="wrap")
 
         # dunno why, looks like scipy messes with the array somehow
         self.phero_map = self.phero_map.astype(np.float32)
