@@ -23,8 +23,6 @@ class Simulator():
     This class simulates the behavior of worldobjects over time
     '''
 
-    buffer_size = 2000
-
     def __init__(self):
         self.world = World()
         self.avg_fps = np.zeros((200))
@@ -109,7 +107,7 @@ class Simulator():
 
 
 
-def create_random_objects(n, dimension = 300):
+def create_random_objects(n, dimension):
     '''
     returns a list of n antobjects with random position and direction vectors
     '''
@@ -127,7 +125,7 @@ def setup(n = 100):
     s = Simulator()
 
     #add some ants
-    s.world.add_objects( create_random_objects(n) )
+    s.world.add_objects( create_random_objects(n, s.world.dimensions) )
 
     return s
 
