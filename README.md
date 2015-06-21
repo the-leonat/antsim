@@ -8,12 +8,12 @@ Python Simulator.py
  - r (record)
  - rt (time in seconds to record)
  - rs (record every nth step)
- - rf (filename)
+ - f (filename)
 
  - v (view)
- - vf (filename)
+ - live (simulates in live mode, without saving to a file)
 
 ## Example
-	Python Simulator.py -r -v -rt 60 -rs 5 -rf test.hdf5
+	Python Simulator.py -r -v -rt 60 -rs 5 -f test.hdf5
 
 	Simulates for 60 seconds, saves every 5th step to file test.hdf5 and does show it afterwards
