@@ -25,7 +25,11 @@ python Simulator.py
 
 	Simulates for 60 seconds, saves every 5th step to file test.hdf5 and shows it afterwards
 
-## Example 2	
+## Example 2
 	python Simulator.py -live -v -ac 100
 	
 	You can also simulate live with the command. this wont save to a file, but display the simulated data right away. 
+
+## Viewer
+press [space] for play and pause
+scroll [up] and [down] to change the view angle
