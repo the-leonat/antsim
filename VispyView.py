@@ -96,7 +96,7 @@ void main()
 class Canvas(app.Canvas):
 
     def __init__(self):
-        app.Canvas.__init__(self, keys='interactive')
+        self.canvas = app.Canvas.__init__(self, keys='interactive')
 
         self.init_simulation_parameters()
 
@@ -221,7 +221,6 @@ class Canvas(app.Canvas):
         gloo.clear(color=True, depth=True)
         self.phero_shader.draw('triangle_strip')
         self.ant_shader.draw('lines')
-        rect
 
     def on_timer(self, event):
         #rotate(self.model, 0.05, 0, 0, 1)
@@ -241,6 +240,16 @@ class Canvas(app.Canvas):
         self.phero_shader['u_view'] = self.view
 
         self.update()
+
+    def on_key_release(self, event):
+        if event.key == "space":
+            if self.timer.running:
+                self.timer.stop()
+                self.simulation_timer.stop()
+            else:
+                self.timer.start()
+                self.simulation_timer.start()
+
 
     def show_fps(self, fps):
         print(fps)
