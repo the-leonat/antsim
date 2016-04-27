@@ -16,10 +16,11 @@ Python Simulator.py
  - live (shows the data right away)
 
 ## Example
-	Python Simulator.py -r -v -rt 60 -rs 5 -rf test.hdf5
+	Python Simulator.py -r -v -rt 60 -rs 5 -f test.hdf5
 
 	Simulates for 60 seconds, saves every 5th step to file test.hdf5 and shows it afterwards
 
 ## Example 2	
 	Python Simulator.py -live -v -ac 100
+	
 	You can also simulate live with the command. this wont save to a file, but display the simulated data right away. 
