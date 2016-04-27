@@ -64,7 +64,7 @@ class Simulator():
                 sto.set("phero", record_count, self.world.phero_map.phero_map)
 
                 record_count += 1
-            
+
 
             fps = int(1 / (time.clock() - start))
 

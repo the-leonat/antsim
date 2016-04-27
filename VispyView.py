@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from vispy import app
 from vispy import gloo
-from vispy.util.transforms import perspective, translate, rotate, yrotate
+from vispy.util.transforms import perspective, translate, rotate
 
 from Storage import Storage
 from Simulator import Simulator
@@ -38,6 +38,7 @@ uniform mat4 u_projection;
 uniform float u_antialias;
 uniform vec2 u_dimension;
 
+
 // Attributes
 attribute vec2 a_position;
 attribute vec2 a_texcoord;
@@ -51,7 +52,7 @@ varying float v_max_value;
 void main (void)
 {
     v_texcoord = a_texcoord;
-    gl_Position = u_projection * u_view * u_model * vec4(a_position / u_dimension,0.0,1.0);
+    gl_Position = u_projection * u_view * u_model * vec4(a_position / u_dimension,0,1.0);
 }
 """
 
@@ -81,7 +82,7 @@ vec4 convertRGBA(float lum)
 
     return vec4(
         1. - normed_lum * (1. - u_color[0]),
-        1. - normed_lum * (1. - u_color[1]),    
+        1. - normed_lum * (1. - u_color[1]),
         1. - normed_lum * (1. - u_color[2]), 0.);
 }
 
@@ -108,7 +109,7 @@ class Canvas(app.Canvas):
         self.ant_shader['u_dimension'] = self.dimensions / 2
         self.phero_shader['u_dimension'] = self.dimensions / 2
 
-        self.texture = gloo.Texture2D(np.zeros(self.dimensions), dtype=np.float32)
+        self.texture = gloo.Texture2D(np.zeros(self.dimensions, dtype=np.float32))
        	self.phero_shader['u_texture'] = self.texture
         self.phero_shader['u_color'] = np.array([240, 10, 130]) / 255.
 
@@ -129,9 +130,12 @@ class Canvas(app.Canvas):
         self.projection = np.eye(4, dtype=np.float32)
         self.translate = 2.3
 
-        rotate(self.view, -60, 1, 0, 0)
+        #rotate(-60, (1, 0, 0))
         #rotate(self.model, 45, 0, 0, 1)
-        translate(self.view, 0, 0, -self.translate)
+        #translate((0, 0, -self.translate))
+
+        self.view = self.view.dot(rotate(-60, (1, 0, 0)))
+        self.view = self.view.dot(translate((0, 0, -self.translate)))
 
         self.ant_shader['u_model'] = self.model
         self.ant_shader['u_view'] = self.view
@@ -147,7 +151,7 @@ class Canvas(app.Canvas):
         data['a_texcoord'] = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
 
         self.texture_bounds = data
-        
+
     def init_simulation_parameters(self):
     	if g.live:
     		self.dimensions = g.simulator.world.dimensions
@@ -170,19 +174,19 @@ class Canvas(app.Canvas):
             if self.current_frame >= self.frame_count - 1:
                 self.current_frame = 0
             else:
-                self.current_frame += 1 
+                self.current_frame += 1
 
             ant = g.storage.get("ant", self.current_frame)
             phero = g.storage.get("phero", self.current_frame)
 
-        
+
         #norm phero map to values between 0 and 1
         if self.bool:
             self.bool = False
         else:
             #print np.amax(phero)
             self.bool = True
-            phero = phero / np.amax(phero) 
+            phero = phero / np.amax(phero)
             self.texture.set_data(phero.astype(np.float32))
         #self.phero_shader['u_mean'] = np.mean(phero)
         #self.phero_shader['u_deviation'] = np.std(phero)
@@ -199,7 +203,7 @@ class Canvas(app.Canvas):
         nant[:,2:3] = 0
 
         self.ant_shader['a_position'] = gloo.VertexBuffer(nant.astype(np.float32))
-        
+
         #self.update()
 
     def on_initialize(self, event):
@@ -217,9 +221,10 @@ class Canvas(app.Canvas):
         gloo.clear(color=True, depth=True)
         self.phero_shader.draw('triangle_strip')
         self.ant_shader.draw('lines')
-    
+        rect
+
     def on_timer(self, event):
-        rotate(self.model, 0.05, 0, 0, 1)
+        #rotate(self.model, 0.05, 0, 0, 1)
         self.ant_shader['u_model'] = self.model
         self.phero_shader['u_model'] = self.model
         self.update()
@@ -229,8 +234,8 @@ class Canvas(app.Canvas):
         self.translate = min(80, max(0, self.translate))
         self.view = np.eye(4, dtype=np.float32)
 
-        rotate(self.view, -self.translate, 1, 0, 0)
-        translate(self.view, 0, 0, -2.3)
+        self.view = self.view.dot(rotate(-self.translate, (1, 0, 0)))
+        self.view = self.view.dot(translate((0, 0, -2.3)))
 
         self.ant_shader['u_view'] = self.view
         self.phero_shader['u_view'] = self.view
