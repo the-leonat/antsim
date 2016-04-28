@@ -116,15 +116,15 @@ class Ant(WorldObject):
         # angle
         # maybe divide by max pheromone concentration
 
-        if c_left + c_right > 0.: 
-        
+        if c_left + c_right > 0.:
+
             a = c_left - c_right
 
             #SIGMOID FUNCTION
-  
+
             a = 2 / ( 1 + np.exp(-4 * a))  -1
 
-            a += np.random.normal(0, Ant.signal_noise)
+            a += np.random.normal(0, self.signal_noise)
 
             turn_angle = (self.max_turn_angle * a * delta)
 
@@ -133,7 +133,7 @@ class Ant(WorldObject):
             self.direction = rotate_vector(self.direction, turn_angle)
             return np.absolute(a)
         else:
-            self.direction = rotate_vector(self.direction, self.max_turn_angle * np.random.normal(0, Ant.signal_noise) * delta)
+            self.direction = rotate_vector(self.direction, self.max_turn_angle * np.random.normal(0, self.signal_noise) * delta)
             return 0
 
     def circuit_world(self):
@@ -157,7 +157,7 @@ class Ant(WorldObject):
         if self.speed + self.acceleration * delta <= self.max_speed:
             self.speed += self.acceleration * delta
         else:
-            self.speed = self.max_speed 
+            self.speed = self.max_speed
 
     def speed_down(self, delta):
         if self.speed - self.acceleration * delta >= self.min_speed:
@@ -180,7 +180,7 @@ class Ant(WorldObject):
         if not evaded:
             trail_change = self.trail_pheromone(delta)
 
-            if trail_change >= Ant.phero_speed_down_treshold:
+            if trail_change >= self.phero_speed_down_treshold:
                 self.speed_down(delta)
             else:
                 self.speed_up(delta)

@@ -15,10 +15,15 @@ import copy
 import Global as g
 
 import yaml
+
+from watchdog.observers import Observer
+from watchdog.events import LoggingEventHandler
+from watchdog.events import FileSystemEventHandler
+
 config = yaml.load(open("config.yml"))
 
 
-class Simulator():
+class Simulator(FileSystemEventHandler):
     '''
     This class simulates the behavior of worldobjects over time
     '''
@@ -27,6 +32,33 @@ class Simulator():
         self.world = World()
         self.avg_fps = np.zeros((200))
         self.avg_fps_index = 0
+
+    def on_modified(self, event):
+        if event.src_path == "./config.yml":
+            config = yaml.load(open("config.yml"))
+            antcount = 0
+
+            self.world.delta_time = config["delta"]
+
+            #update all ants
+            for wo in self.world.world_objects:
+                if isinstance(wo, Ant):
+                    antcount += 1
+                    wo.max_speed = config["ant"]["max_speed"]
+                    wo.min_speed = config["ant"]["min_speed"]
+                    wo.max_turn_angle = config["ant"]["max_turn_angle"]
+                    wo.acceleration = config["ant"]["acceleration"]
+
+                    wo.length = config["ant"]["length"]
+                    wo.center_radius = config["ant"]["center_radius"]
+                    wo.head_radius = config["ant"]["head_radius"]
+                    wo.head_angle = config["ant"]["head_angle"]
+
+                    wo.signal_noise = config["ant"]["angle_noise_error"]
+
+                    wo.phero_speed_down_treshold = config["ant"]["phero_speed_down_treshold"]
+
+            print "changed params of " + str(antcount) + " ants."
 
     def simulate_steps(self, n = 1):
         '''
@@ -188,7 +220,15 @@ if __name__ == "__main__":
             g.storage = Storage(filename, buffer_size=buffer_size)
         if not record and live:
             g.simulator = setup(ant_count)
+            event_handler = g.simulator
+            observer = Observer()
+            observer.schedule(event_handler, path='.', recursive=False)
+            observer.start()
+
 
         MainView.start_view(view_fps)
 
-
+        if not record and live:
+            print "good bye"
+            observer.stop()
+            observer.join()
