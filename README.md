@@ -31,4 +31,5 @@ python Simulator.py
 	You can also simulate live with the command. this wont save to a file, but display the simulated data right away. 
 
 ## Viewer
-press [space] for play and pause, scroll [up] and [down] to change the view angle
+press [space] for play and pause, scroll [up] and [down] to change the view angle.
+you can also interactively change parameters of config.yml in live mode.
