@@ -1,26 +1,27 @@
 
 #global config
-delta: 0.05 # 20 steps per second
-world_dimension: [1000, 1000]
+delta: 0.05 #steps per second
+world_dimension: [500, 500]
 
 #ant config
 ant:
   #movement all per second
+  #mm per second
   max_speed: 50
   min_speed: 10
-  max_turn_angle: 40
-  acceleration: 50
+  #degree per second
+  max_turn_angle: 60
+  #mm per second
+  acceleration: 90
 
   #proportions
-  length: 10
+  #mm
+  length: 12
   center_radius: 5
-  head_radius: 4
-  head_angle: 100
+  head_radius: 5
+  head_angle: 120
 
-  #determines the max angle which can be added due to signnoise 
+  #determines the max angle which can be added due to signnoise
   angle_noise_error: 0.25
 
   phero_speed_down_treshold: 0.8
-
-
-
